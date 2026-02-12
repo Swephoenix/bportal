@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beställningsportalen</title>
+  <style>
+    :root {
+      --primary: #0056b3;
+      --primary-hover: #004494;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --success: #16a34a;
+      --danger: #dc2626;
+      --admin: #334155;
+      --logo-offset-x: 18px;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 24px 20px;
+      min-height: 100vh;
+      font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .page-shell { width: 100%; max-width: 980px; }
+    .logo-row { display: flex; justify-content: center; margin-bottom: 20px; }
+    .site-logo { width: min(100%, 460px); height: auto; transform: translateX(var(--logo-offset-x)); }
+
+    .admin-trigger {
+      position: fixed;
+      right: 20px;
+      top: 20px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--admin);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .admin-trigger:hover { background: var(--admin); color: white; }
+
+    .card {
+      background: var(--card);
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+      padding: 28px;
+    }
+
+    .view { display: none; }
+    .view.active { display: block; }
+    .step { display: none; }
+    .step.active { display: block; }
+
+    h2 { margin: 0 0 8px; }
+    .desc { margin: 0 0 20px; color: var(--muted); }
+
+    .progress { height: 6px; border-radius: 10px; background: var(--border); margin-bottom: 24px; overflow: hidden; }
+    .progress-fill { height: 100%; width: 33.333%; background: var(--primary); transition: width .2s; }
+
+    .dept-grid { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 12px; }
+    .dept-btn {
+      border: 2px solid var(--border);
+      background: #fff;
+      border-radius: 10px;
+      padding: 16px;
+      cursor: pointer;
+      font-weight: 700;
+      text-align: center;
+    }
+    .dept-btn:hover { border-color: var(--primary); background: #f1f5f9; }
+    .dept-hint {
+      margin-top: 14px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      background: #f8fafc;
+    }
+    .dept-hint-title { font-weight: 800; margin: 0 0 6px; }
+    .dept-hint-text { margin: 0; color: var(--muted); }
+
+    label { display: block; font-size: 0.9rem; font-weight: 700; margin-bottom: 8px; }
+    .form-group { margin-bottom: 16px; }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 11px 12px;
+      font: inherit;
+      color: inherit;
+      background: #fff;
+    }
+
+    textarea { min-height: 120px; resize: vertical; }
+    .small-note { margin-top: 6px; color: var(--muted); font-size: .82rem; }
+
+    .btn-row { display: flex; gap: 10px; margin-top: 24px; }
+    .btn {
+      border: none;
+      border-radius: 8px;
+      padding: 11px 16px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: .95rem;
+    }
+    .btn-primary { background: var(--primary); color: white; flex: 1; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: #e2e8f0; color: var(--text); }
+    .btn-danger { background: var(--danger); color: white; }
+
+    .status { margin-bottom: 14px; min-height: 20px; color: var(--danger); font-weight: 600; }
+    .status.ok { color: var(--success); }
+
+    .success { text-align: center; }
+    .ref-box {
+      margin-top: 8px;
+      display: inline-block;
+      border: 1px solid #bfdbfe;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-weight: 700;
+      border-radius: 8px;
+      padding: 8px 12px;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto auto;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .tickets { display: flex; flex-direction: column; gap: 10px; }
+    .ticket {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      background: #fff;
+    }
+
+    .ticket-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 8px;
+    }
+
+    .chip { font-size: .78rem; font-weight: 700; border-radius: 999px; padding: 4px 8px; border: 1px solid transparent; }
+    .chip-new { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+    .chip-in-progress { background: #fffbeb; color: #92400e; border-color: #fcd34d; }
+    .chip-done { background: #ecfdf5; color: #166534; border-color: #86efac; }
+
+    .meta { color: var(--muted); font-size: .82rem; margin-bottom: 8px; }
+    .message { white-space: pre-wrap; margin-bottom: 8px; }
+
+    .ticket-actions {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .empty {
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      text-align: center;
+      color: var(--muted);
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(15,23,42,.55);
+      z-index: 2000;
+      padding: 20px;
+    }
+
+    .modal.active { display: flex; }
+    .modal-card {
+      width: 100%;
+      max-width: 760px;
+      background: #fff;
+      border-radius: 14px;
+      padding: 20px;
+    }
+
+    .modal-title { margin: 0 0 10px; font-size: 1.1rem; }
+    #messageModalField { min-height: 320px; }
+
+    @media (max-width: 820px) {
+      .toolbar { grid-template-columns: 1fr; }
+      .ticket-actions { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 480px) {
+      :root { --logo-offset-x: 8px; }
+      .dept-grid { grid-template-columns: 1fr; }
+      .btn-row { flex-direction: column; }
+      .card { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <button class="admin-trigger" type="button" onclick="openAdminLogin()">Admin</button>
+
+  <div class="page-shell">
+    <div class="logo-row">
+      <img src="logo.png" alt="Beställningsportalen" class="site-logo">
+    </div>
+
+    <div class="card">
+      <div id="view-portal" class="view active">
+        <div class="progress"><div id="progressFill" class="progress-fill"></div></div>
+
+        <form id="orderForm">
+          <div id="step1" class="step active">
+            <h2>Vad gäller det?</h2>
+            <p class="desc">Välj vilken avdelning som ska hantera din förfrågan.</p>
+            <div class="dept-grid" id="deptGrid"></div>
+            <div class="dept-hint" id="deptHint" aria-live="polite">
+              <p class="dept-hint-title" id="deptHintTitle">Hjälp att välja</p>
+              <p class="dept-hint-text" id="deptHintText">Håll musen över en avdelning (eller tryck) för att se exempel på vad som passar där.</p>
+            </div>
+          </div>
+
+          <div id="step2" class="step">
+            <h2>Beskriv ditt ärende</h2>
+            <p class="desc">Kortfattad beskrivning och eventuella bilagor.</p>
+            <div class="form-group">
+              <label for="message">Beskrivning</label>
+              <textarea id="message" required placeholder="Skriv kort vad du vill ha..."></textarea>
+              <button type="button" class="btn btn-secondary" style="margin-top:10px;" onclick="openMessageModal()">Öppna i popup</button>
+            </div>
+            <div class="form-group">
+              <label for="file">Bifoga filer</label>
+              <input id="file" type="file" multiple>
+              <div id="fileNames" class="small-note">Inga filer valda.</div>
+            </div>
+            <div class="btn-row">
+              <button type="button" class="btn btn-secondary" onclick="prevStep()">Bakåt</button>
+              <button type="button" class="btn btn-primary" onclick="nextStep()">Nästa</button>
+            </div>
+          </div>
+
+          <div id="step3" class="step">
+            <h2>Dina uppgifter</h2>
+            <p class="desc">Vem skickar beställningen?</p>
+            <div class="form-group">
+              <label for="name">Namn</label>
+              <input id="name" type="text" required>
+            </div>
+            <div class="form-group">
+              <label for="email">E-post</label>
+              <input id="email" type="email" required>
+            </div>
+            <div class="form-group">
+              <label for="phone">Telefon (frivilligt)</label>
+              <input id="phone" type="text">
+            </div>
+            <div id="portalStatus" class="status"></div>
+            <div class="btn-row">
+              <button type="button" class="btn btn-secondary" onclick="prevStep()">Bakåt</button>
+              <button type="submit" class="btn btn-primary">Skicka beställning</button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div id="view-admin-login" class="view">
+        <h2>Gruppinlogg</h2>
+        <p class="desc">Varje grupp loggar in med eget användarnamn och lösenord.</p>
+        <form id="adminLoginForm">
+          <div class="form-group">
+            <label for="adminUsername">Användarnamn</label>
+            <input id="adminUsername" type="text" required autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label for="adminPassword">Lösenord</label>
+            <input id="adminPassword" type="password" required autocomplete="current-password">
+          </div>
+          <div id="loginStatus" class="status"></div>
+          <div class="btn-row">
+            <button type="button" class="btn btn-secondary" onclick="showView('view-portal')">Avbryt</button>
+            <button type="submit" class="btn btn-primary" style="background:var(--admin);">Logga in</button>
+          </div>
+        </form>
+      </div>
+
+      <div id="view-admin-dashboard" class="view">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px;">
+          <div>
+            <h2 style="margin-bottom:4px;">Adminpanel</h2>
+            <p id="adminInfo" class="desc" style="margin:0;"></p>
+          </div>
+          <div class="btn-row" style="margin:0;">
+            <button type="button" class="btn btn-secondary" onclick="exportOrders()">Exportera JSON</button>
+            <button type="button" class="btn btn-secondary" onclick="logout()">Logga ut</button>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <select id="filterStatus" onchange="loadOrders()">
+            <option value="all">Alla statusar</option>
+            <option value="new">Nya</option>
+            <option value="in-progress">Pågår</option>
+            <option value="done">Klara</option>
+          </select>
+          <input id="filterSearch" type="text" placeholder="Sök på referens, namn eller text" oninput="loadOrders()">
+          <button type="button" class="btn btn-secondary" onclick="loadOrders()">Uppdatera</button>
+          <button type="button" class="btn btn-danger" onclick="clearDepartment()">Rensa min grupp</button>
+        </div>
+
+        <div id="adminStatus" class="status"></div>
+        <div id="tickets" class="tickets"></div>
+      </div>
+
+      <div id="view-success" class="view success">
+        <h2>Skickat</h2>
+        <p class="desc">Vi har tagit emot din beställning.</p>
+        <div id="latestRef" class="ref-box"></div>
+        <div class="btn-row" style="justify-content:center;">
+          <button type="button" class="btn btn-secondary" onclick="startNewOrder()">Ny beställning</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="messageModal" class="modal" aria-hidden="true" onclick="closeMessageModal(event)">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="messageModalTitle">
+      <h3 id="messageModalTitle" class="modal-title">Beskrivning (stort fält)</h3>
+      <textarea id="messageModalField" placeholder="Skriv din beskrivning..."></textarea>
+      <div class="btn-row" style="justify-content:flex-end;">
+        <button type="button" class="btn btn-secondary" onclick="closeMessageModal()">Avbryt</button>
+        <button type="button" class="btn btn-primary" onclick="saveMessageFromModal()">Spara text</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DEPARTMENTS = [
+      {
+        id: 'it-support',
+        name: 'IT-support',
+        icon: 'IT-S',
+        guideTitle: 'IT-support (snabb hjälp)',
+        guideText: 'Passar för: lösenord/inlogg, e-postproblem, skrivare, nätverk/Wi-Fi, dator som krånglar, behörigheter och konton.'
+      },
+      {
+        id: 'it',
+        name: 'IT / Mjukvara',
+        icon: 'IT',
+        guideTitle: 'IT / Mjukvara (system och licenser)',
+        guideText: 'Passar för: nya program/verktyg, licensbeställningar, integrationer, API, automation, nya funktioner och förbättringar i interna system.'
+      },
+      {
+        id: 'hemsida',
+        name: 'Hemsidan',
+        icon: 'WEB',
+        guideTitle: 'Hemsidan (webb och innehåll)',
+        guideText: 'Passar för: ändringar på webbplatsen, nya sidor/landningssidor, formulär, texter/bilder, SEO, buggar på sajten.'
+      },
+      {
+        id: 'grafikfabriken',
+        name: 'Grafikfabriken',
+        icon: 'GFX',
+        guideTitle: 'Grafikfabriken (design och original)',
+        guideText: 'Passar för: grafisk form, mallar, trycksaker, loggor, banners, bildredigering och original för produktion.'
+      },
+      {
+        id: 'marknad',
+        name: 'Marknad',
+        icon: 'MKT',
+        guideTitle: 'Marknad (kampanjer och kommunikation)',
+        guideText: 'Passar för: kampanjer, annonsering, nyhetsbrev, budskap/tonalitet, planering, uppföljning och målgrupper.'
+      },
+      {
+        id: 'facebook',
+        name: 'Facebook',
+        icon: 'FB',
+        guideTitle: 'Facebook (socialt och community)',
+        guideText: 'Passar för: inlägg på Facebook, moderering, kommentarer, innehållskalender, publicering och community-frågor.'
+      }
+    ];
+
+    let currentStep = 1;
+    let selectedDepartment = null;
+    let currentUser = null;
+
+    function $(id) { return document.getElementById(id); }
+
+    function showStatus(id, text, ok = false) {
+      const el = $(id);
+      if (!el) return;
+      el.textContent = text || '';
+      el.classList.toggle('ok', !!ok);
+    }
+
+    function showView(viewId) {
+      document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
+      $(viewId).classList.add('active');
+    }
+
+    function updateSteps() {
+      document.querySelectorAll('.step').forEach((s) => s.classList.remove('active'));
+      $('step' + currentStep).classList.add('active');
+      $('progressFill').style.width = ((currentStep / 3) * 100) + '%';
+    }
+
+    function setDepartmentHint(dept) {
+      if (!dept) return;
+      $('deptHintTitle').textContent = dept.guideTitle || dept.name;
+      $('deptHintText').textContent = dept.guideText || '';
+    }
+
+    function previewDepartment(deptId) {
+      const dept = DEPARTMENTS.find((d) => d.id === deptId) || null;
+      if (!dept) return;
+      setDepartmentHint(dept);
+    }
+
+    function renderDepartments() {
+      $('deptGrid').innerHTML = DEPARTMENTS.map((d) => (
+        '<button type="button" class="dept-btn" ' +
+        'onmouseenter="previewDepartment(\'' + d.id + '\')" ' +
+        'onfocus="previewDepartment(\'' + d.id + '\')" ' +
+        'onclick="selectDepartment(\'' + d.id + '\')">' +
+        '<span style="display:block;font-size:1.4rem;margin-bottom:4px;">' + d.icon + '</span>' +
+        d.name + '</button>'
+      )).join('');
+    }
+
+    function selectDepartment(deptId) {
+      selectedDepartment = DEPARTMENTS.find((d) => d.id === deptId) || null;
+      if (selectedDepartment) setDepartmentHint(selectedDepartment);
+      currentStep = 2;
+      updateSteps();
+    }
+
+    function nextStep() {
+      if (currentStep === 2 && !$('message').value.trim()) {
+        alert('Beskriv vad du behöver hjälp med.');
+        return;
+      }
+      currentStep = Math.min(3, currentStep + 1);
+      updateSteps();
+    }
+
+    function prevStep() {
+      currentStep = Math.max(1, currentStep - 1);
+      updateSteps();
+    }
+
+    function openMessageModal() {
+      $('messageModalField').value = $('message').value;
+      $('messageModal').classList.add('active');
+      $('messageModal').setAttribute('aria-hidden', 'false');
+      $('messageModalField').focus();
+    }
+
+    function closeMessageModal(event) {
+      const modal = $('messageModal');
+      if (!event || event.target === modal) {
+        modal.classList.remove('active');
+        modal.setAttribute('aria-hidden', 'true');
+      }
+    }
+
+    function saveMessageFromModal() {
+      $('message').value = $('messageModalField').value;
+      closeMessageModal();
+    }
+
+    function updateFileNames() {
+      const files = Array.from($('file').files || []);
+      $('fileNames').textContent = files.length ? files.map((f) => f.name).join(', ') : 'Inga filer valda.';
+    }
+
+    async function submitOrder(e) {
+      e.preventDefault();
+      showStatus('portalStatus', '');
+
+      if (!selectedDepartment) {
+        showStatus('portalStatus', 'Välj en avdelning i steg 1.');
+        currentStep = 1;
+        updateSteps();
+        return;
+      }
+
+      const payload = {
+        departmentId: selectedDepartment.id,
+        message: $('message').value.trim(),
+        name: $('name').value.trim(),
+        email: $('email').value.trim(),
+        phone: $('phone').value.trim(),
+        files: Array.from($('file').files || []).map((f) => ({ name: f.name, size: f.size }))
+      };
+
+      if (!payload.message || !payload.name || !payload.email) {
+        showStatus('portalStatus', 'Meddelande, namn och e-post ar obligatoriska.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Kunde inte skapa ärende');
+
+        $('latestRef').textContent = 'Referens: ' + data.order.reference;
+        showView('view-success');
+      } catch (err) {
+        showStatus('portalStatus', err.message || 'Tekniskt fel.');
+      }
+    }
+
+    function startNewOrder() {
+      $('orderForm').reset();
+      $('fileNames').textContent = 'Inga filer valda.';
+      showStatus('portalStatus', '');
+      selectedDepartment = null;
+      currentStep = 1;
+      updateSteps();
+      showView('view-portal');
+    }
+
+    function openAdminLogin() {
+      showStatus('loginStatus', '');
+      $('adminLoginForm').reset();
+      showView('view-admin-login');
+    }
+
+    async function login(e) {
+      e.preventDefault();
+      showStatus('loginStatus', '');
+
+      const username = $('adminUsername').value.trim();
+      const password = $('adminPassword').value;
+      if (!username || !password) {
+        showStatus('loginStatus', 'Anvandarnamn och losenord kravs.');
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Inloggning misslyckades');
+
+        currentUser = data.user;
+        $('adminInfo').textContent = 'Inloggad som ' + currentUser.username + ' (' + currentUser.departmentName + ')';
+        showView('view-admin-dashboard');
+        await loadOrders();
+      } catch (err) {
+        showStatus('loginStatus', err.message || 'Tekniskt fel.');
+      }
+    }
+
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/auth/me');
+        const data = await res.json();
+        if (data.authenticated) {
+          currentUser = data.user;
+          $('adminInfo').textContent = 'Inloggad som ' + currentUser.username + ' (' + currentUser.departmentName + ')';
+          showView('view-admin-dashboard');
+          await loadOrders();
+        }
+      } catch (_) {
+      }
+    }
+
+    async function logout() {
+      try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+      } finally {
+        currentUser = null;
+        showView('view-portal');
+      }
+    }
+
+    function statusLabel(value) {
+      if (value === 'new') return 'Ny';
+      if (value === 'in-progress') return 'Pågår';
+      return 'Klar';
+    }
+
+    async function loadOrders() {
+      if (!currentUser) return;
+      showStatus('adminStatus', '');
+
+      const status = $('filterStatus').value;
+      const q = $('filterSearch').value.trim();
+      const params = new URLSearchParams();
+      params.set('status', status);
+      if (q) params.set('q', q);
+
+      try {
+        const res = await fetch('/api/orders?' + params.toString());
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Kunde inte hämta ärenden');
+        renderTickets(data.orders || []);
+      } catch (err) {
+        showStatus('adminStatus', err.message || 'Tekniskt fel.');
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    function formatDate(iso) {
+      const d = new Date(iso);
+      return d.toLocaleString('sv-SE', {
+        year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+      });
+    }
+
+    function renderTickets(orders) {
+      const root = $('tickets');
+      if (!orders.length) {
+        root.innerHTML = '<div class="empty">Inga ärenden matchar filtret.</div>';
+        return;
+      }
+
+      root.innerHTML = orders.map((o) => {
+        const files = (o.files || []).length ? o.files.map((f) => escapeHtml(f.name)).join(', ') : 'Inga bilagor';
+        return (
+          '<article class="ticket">' +
+            '<div class="ticket-head">' +
+              '<strong>' + escapeHtml(o.reference) + '</strong>' +
+              '<span class="chip chip-' + escapeHtml(o.status) + '">' + statusLabel(o.status) + '</span>' +
+            '</div>' +
+            '<div class="meta">' + formatDate(o.createdAt) + ' | ' + escapeHtml(o.name) + ' | ' + escapeHtml(o.email) + (o.phone ? ' | ' + escapeHtml(o.phone) : '') + '</div>' +
+            '<div class="message">' + escapeHtml(o.message) + '</div>' +
+            '<div class="small-note" style="margin-bottom:8px;">Bilagor: ' + files + '</div>' +
+            '<div class="ticket-actions">' +
+              '<input id="note-' + escapeHtml(o.id) + '" type="text" value="' + escapeHtml(o.adminNote || '') + '" placeholder="Intern anteckning">' +
+              '<select onchange="updateStatus(\'' + o.id + '\', this.value)">' +
+                '<option value="new"' + (o.status === 'new' ? ' selected' : '') + '>Ny</option>' +
+                '<option value="in-progress"' + (o.status === 'in-progress' ? ' selected' : '') + '>Pågår</option>' +
+                '<option value="done"' + (o.status === 'done' ? ' selected' : '') + '>Klar</option>' +
+              '</select>' +
+              '<button type="button" class="btn btn-secondary" onclick="saveNote(\'' + o.id + '\')">Spara</button>' +
+            '</div>' +
+          '</article>'
+        );
+      }).join('');
+    }
+
+    async function updateStatus(orderId, status) {
+      try {
+        const res = await fetch('/api/orders/' + encodeURIComponent(orderId), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Kunde inte uppdatera status');
+        await loadOrders();
+      } catch (err) {
+        showStatus('adminStatus', err.message || 'Tekniskt fel.');
+      }
+    }
+
+    async function saveNote(orderId) {
+      const note = $('note-' + orderId)?.value || '';
+      try {
+        const res = await fetch('/api/orders/' + encodeURIComponent(orderId), {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ adminNote: note })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Kunde inte spara anteckning');
+        showStatus('adminStatus', 'Anteckning sparad.', true);
+      } catch (err) {
+        showStatus('adminStatus', err.message || 'Tekniskt fel.');
+      }
+    }
+
+    async function clearDepartment() {
+      if (!confirm('Detta rensar alla ärenden för inloggad grupp. Fortsätta?')) return;
+      try {
+        const res = await fetch('/api/orders/department', { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Kunde inte rensa ärenden');
+        showStatus('adminStatus', 'Rensade ' + data.removed + ' ärenden.', true);
+        await loadOrders();
+      } catch (err) {
+        showStatus('adminStatus', err.message || 'Tekniskt fel.');
+      }
+    }
+
+    function exportOrders() {
+      window.location.href = '/api/orders/export';
+    }
+
+    function bindEvents() {
+      $('orderForm').addEventListener('submit', submitOrder);
+      $('adminLoginForm').addEventListener('submit', login);
+      $('file').addEventListener('change', updateFileNames);
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') closeMessageModal();
+      });
+    }
+
+    async function init() {
+      renderDepartments();
+      bindEvents();
+      updateSteps();
+      await checkAuth();
+    }
+
+    init();
+  </script>
+</body>
+</html>

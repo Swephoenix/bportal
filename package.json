@@ -1,0 +1,10 @@
+{
+  "name": "bestallningsportalen",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Bestallningsportal med gruppinloggning och adminpanel",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  }
+}

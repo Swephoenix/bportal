@@ -79,8 +79,28 @@
       cursor: pointer;
       font-weight: 700;
       text-align: center;
+      color: var(--text);
+      transition: border-color .15s, background .15s, color .15s;
     }
-    .dept-btn:hover { border-color: var(--primary); background: #f1f5f9; }
+    .dept-btn:hover,
+    .dept-btn:focus-visible { border-color: var(--primary); background: #f1f5f9; color: var(--primary); }
+    .dept-icon {
+      display: block;
+      width: 36px;
+      height: 36px;
+      margin: 0 auto 8px;
+      color: inherit;
+    }
+    .dept-icon svg {
+      display: block;
+      width: 100%;
+      height: 100%;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
     .dept-hint {
       margin-top: 14px;
       border: 1px solid var(--border);
@@ -287,11 +307,13 @@
 
       <div id="view-admin-login" class="view">
         <h2>Gruppinlogg</h2>
-        <p class="desc">Varje grupp loggar in med eget användarnamn och lösenord.</p>
+        <p class="desc">Välj avdelning och logga in med avdelningens lösenord.</p>
         <form id="adminLoginForm">
           <div class="form-group">
-            <label for="adminUsername">Användarnamn</label>
-            <input id="adminUsername" type="text" required autocomplete="username">
+            <label for="adminDepartment">Avdelning</label>
+            <select id="adminDepartment" required autocomplete="organization">
+              <option value="">Välj avdelning</option>
+            </select>
           </div>
           <div class="form-group">
             <label for="adminPassword">Lösenord</label>
@@ -356,46 +378,77 @@
   </div>
 
   <script>
+    const DEPARTMENT_ICONS = {
+      'it-support': '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M16 33h-3a7 7 0 0 1-7-7v-2a12 12 0 0 1 24 0v2a7 7 0 0 1-7 7h-3"/><path d="M16 33v-8a4 4 0 0 1 8 0v8"/><path d="M24 33h5a5 5 0 0 0 5-5v-2"/><path d="M30 36h-6"/></svg>',
+      it: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="10" width="32" height="24" rx="3"/><path d="M18 40h12"/><path d="M24 34v6"/><path d="m20 18-5 5 5 5"/><path d="m28 18 5 5-5 5"/></svg>',
+      hemsida: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="7" y="10" width="34" height="28" rx="3"/><path d="M7 18h34"/><path d="M14 14h.1"/><path d="M20 14h.1"/><path d="M14 26h20"/><path d="M14 32h12"/></svg>',
+      'grafiskt-material': '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 36h28"/><path d="M15 32 31 16l5 5-16 16h-5z"/><path d="m29 18 5 5"/><path d="M14 12h8"/><path d="M10 16h6"/></svg>',
+      marknad: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 22h9l17-7v18l-17-7H8z"/><path d="M17 26v8a3 3 0 0 0 6 0v-5"/><path d="M38 20a6 6 0 0 1 0 8"/></svg>',
+      facebook: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="9" width="32" height="28" rx="5"/><path d="M17 21h14"/><path d="M17 28h9"/><path d="M18 37l6-6h10"/></svg>',
+      partiet: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M13 15h22a6 6 0 0 1 6 6v5a6 6 0 0 1-6 6H24l-8 7v-7h-3a6 6 0 0 1-6-6v-5a6 6 0 0 1 6-6z"/><path d="M24 27v-.5a4 4 0 1 0-4-4"/><path d="M24 32h.1"/></svg>',
+      material: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M14 10h20v28H14z"/><path d="M18 16h12"/><path d="M18 22h12"/><path d="M18 28h8"/><path d="M10 14h4"/><path d="M10 20h4"/><path d="M10 26h4"/><path d="M34 16h4v24H18v-2"/></svg>',
+      utskick: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="14" width="32" height="22" rx="3"/><path d="m9 17 15 12 15-12"/><path d="m9 34 11-10"/><path d="m39 34-11-10"/></svg>',
+      medlemskontroll: '<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="19" cy="18" r="6"/><path d="M9 38a10 10 0 0 1 20 0"/><path d="M29 20l4 4 8-9"/><path d="M31 34h10"/><path d="M36 29v10"/></svg>'
+    };
+
     const DEPARTMENTS = [
+      {
+        id: 'partiet',
+        name: 'Frågor om partiet',
+        guideTitle: 'Frågor om partiet',
+        guideText: 'Passar för: frågor om partiets politik, medlemskap, lokala aktiviteter, företrädare, ställningstaganden och kontaktvägar.'
+      },
+      {
+        id: 'material',
+        name: 'Beställa brochyrer',
+        guideTitle: 'Beställa brochyrer',
+        guideText: 'Passar för: beställning av brochyrer, foldrar, flyers och liknande informationsmaterial.'
+      },
+      {
+        id: 'grafiskt-material',
+        name: 'Beställa övrigt grafiskt material',
+        guideTitle: 'Beställa övrigt grafiskt material',
+        guideText: 'Passar för: beställning av affischer, skyltar, profilmaterial, original, mallar och annat grafiskt material.'
+      },
+      {
+        id: 'utskick',
+        name: 'Utskick',
+        guideTitle: 'Utskick',
+        guideText: 'Passar för: allt som handlar om att skicka ut meddelanden till medlemmar, till exempel e-post, brev, SMS, målgrupper och distributionsunderlag.'
+      },
+      {
+        id: 'medlemskontroll',
+        name: 'Medlemskontroll',
+        guideTitle: 'Medlemskontroll',
+        guideText: 'Passar för: kontroll av medlemskap, medlemsuppgifter, listor, behörighet, registerunderlag och verifiering inför utskick eller aktiviteter.'
+      },
       {
         id: 'it-support',
         name: 'IT-support',
-        icon: 'IT-S',
         guideTitle: 'IT-support (snabb hjälp)',
         guideText: 'Passar för: lösenord/inlogg, e-postproblem, skrivare, nätverk/Wi-Fi, dator som krånglar, behörigheter och konton.'
       },
       {
         id: 'it',
         name: 'IT / Mjukvara',
-        icon: 'IT',
         guideTitle: 'IT / Mjukvara (system och licenser)',
         guideText: 'Passar för: nya program/verktyg, licensbeställningar, integrationer, API, automation, nya funktioner och förbättringar i interna system.'
       },
       {
         id: 'hemsida',
         name: 'Hemsidan',
-        icon: 'WEB',
         guideTitle: 'Hemsidan (webb och innehåll)',
         guideText: 'Passar för: ändringar på webbplatsen, nya sidor/landningssidor, formulär, texter/bilder, SEO, buggar på sajten.'
       },
       {
-        id: 'grafikfabriken',
-        name: 'Grafikfabriken',
-        icon: 'GFX',
-        guideTitle: 'Grafikfabriken (design och original)',
-        guideText: 'Passar för: grafisk form, mallar, trycksaker, loggor, banners, bildredigering och original för produktion.'
-      },
-      {
         id: 'marknad',
         name: 'Marknad',
-        icon: 'MKT',
         guideTitle: 'Marknad (kampanjer och kommunikation)',
         guideText: 'Passar för: kampanjer, annonsering, nyhetsbrev, budskap/tonalitet, planering, uppföljning och målgrupper.'
       },
       {
         id: 'facebook',
         name: 'Facebook',
-        icon: 'FB',
         guideTitle: 'Facebook (socialt och community)',
         guideText: 'Passar för: inlägg på Facebook, moderering, kommentarer, innehållskalender, publicering och community-frågor.'
       }
@@ -443,8 +496,14 @@
         'onmouseenter="previewDepartment(\'' + d.id + '\')" ' +
         'onfocus="previewDepartment(\'' + d.id + '\')" ' +
         'onclick="selectDepartment(\'' + d.id + '\')">' +
-        '<span style="display:block;font-size:1.4rem;margin-bottom:4px;">' + d.icon + '</span>' +
-        d.name + '</button>'
+        '<span class="dept-icon">' + DEPARTMENT_ICONS[d.id] + '</span>' +
+        escapeHtml(d.name) + '</button>'
+      )).join('');
+    }
+
+    function renderAdminDepartments() {
+      $('adminDepartment').innerHTML = '<option value="">Välj avdelning</option>' + DEPARTMENTS.map((d) => (
+        '<option value="' + escapeHtml(d.id) + '">' + escapeHtml(d.name) + '</option>'
       )).join('');
     }
 
@@ -555,10 +614,10 @@
       e.preventDefault();
       showStatus('loginStatus', '');
 
-      const username = $('adminUsername').value.trim();
+      const departmentId = $('adminDepartment').value;
       const password = $('adminPassword').value;
-      if (!username || !password) {
-        showStatus('loginStatus', 'Anvandarnamn och losenord kravs.');
+      if (!departmentId || !password) {
+        showStatus('loginStatus', 'Avdelning och lösenord krävs.');
         return;
       }
 
@@ -566,13 +625,13 @@
         const res = await fetch('/api/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password })
+          body: JSON.stringify({ departmentId, password })
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Inloggning misslyckades');
 
         currentUser = data.user;
-        $('adminInfo').textContent = 'Inloggad som ' + currentUser.username + ' (' + currentUser.departmentName + ')';
+        $('adminInfo').textContent = 'Inloggad som ' + currentUser.departmentName;
         showView('view-admin-dashboard');
         await loadOrders();
       } catch (err) {
@@ -586,7 +645,7 @@
         const data = await res.json();
         if (data.authenticated) {
           currentUser = data.user;
-          $('adminInfo').textContent = 'Inloggad som ' + currentUser.username + ' (' + currentUser.departmentName + ')';
+          $('adminInfo').textContent = 'Inloggad som ' + currentUser.departmentName;
           showView('view-admin-dashboard');
           await loadOrders();
         }
@@ -654,6 +713,9 @@
 
       root.innerHTML = orders.map((o) => {
         const files = (o.files || []).length ? o.files.map((f) => escapeHtml(f.name)).join(', ') : 'Inga bilagor';
+        const emailStatus = o.emailStatus === 'sent'
+          ? 'Mejl skickat'
+          : (o.emailStatus === 'failed' ? 'Mejl misslyckades' : (o.emailStatus === 'pending' ? 'Mejl väntar' : 'Inget mejl'));
         return (
           '<article class="ticket">' +
             '<div class="ticket-head">' +
@@ -661,6 +723,7 @@
               '<span class="chip chip-' + escapeHtml(o.status) + '">' + statusLabel(o.status) + '</span>' +
             '</div>' +
             '<div class="meta">' + formatDate(o.createdAt) + ' | ' + escapeHtml(o.name) + ' | ' + escapeHtml(o.email) + (o.phone ? ' | ' + escapeHtml(o.phone) : '') + '</div>' +
+            (o.recipientEmail ? '<div class="small-note">Mottagare: ' + escapeHtml(o.recipientEmail) + ' | ' + emailStatus + (o.emailError ? ': ' + escapeHtml(o.emailError) : '') + '</div>' : '') +
             '<div class="message">' + escapeHtml(o.message) + '</div>' +
             '<div class="small-note" style="margin-bottom:8px;">Bilagor: ' + files + '</div>' +
             '<div class="ticket-actions">' +
@@ -736,6 +799,7 @@
 
     async function init() {
       renderDepartments();
+      renderAdminDepartments();
       bindEvents();
       updateSteps();
       await checkAuth();

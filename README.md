@@ -3,7 +3,8 @@
 Systemet är nu ett riktigt serverbaserat system med:
 - API + sessionhantering (cookie-baserad inloggning)
 - Ärenden sparade på servern i `data/orders.json`
-- Separata gruppinloggningar (eget konto per avdelning)
+- Mejlrouting för avdelningar med definierad mottagaradress
+- Separata avdelningsinloggningar med avdelningsval och lösenord
 
 ## Starta
 
@@ -13,12 +14,29 @@ npm start
 
 Servern startar på `http://localhost:3000` (eller `PORT` om satt).
 
+## Mejlsändning
+
+Beställningen sparas alltid i `data/orders.json`. Om vald avdelning har en definierad mottagaradress försöker servern även skicka ett mejl och sparar resultatet på ärendet.
+
+Konfigurera SMTP via miljövariabler:
+
+```bash
+SMTP_HOST=smtp.example.com \
+SMTP_PORT=587 \
+SMTP_USER=anvandare@example.com \
+SMTP_PASS=losenord \
+SMTP_FROM=noreply@ambitionsverige.se \
+npm start
+```
+
+För port 465 används TLS direkt. Annars använder servern STARTTLS.
+
 ## Gruppinloggningar (standard)
 
 Skapas automatiskt första gången i `data/users.json`.
-Servern skriver ut initiala lösenord i terminalen en gång, vid första skapandet.
+Som demo återställer servern avdelningarnas lösenord och skriver ut dem i terminalen vid varje start.
 
-Varje konto ser bara ärenden för sin egen grupp.
+Varje avdelning väljs från en dropdown i admininloggningen och ser bara sina egna ärenden.
 
 ## Viktiga filer
 

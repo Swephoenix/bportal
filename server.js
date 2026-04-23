@@ -2,6 +2,8 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const net = require('net');
+const tls = require('tls');
 
 const PORT = process.env.PORT || 3000;
 const ROOT_DIR = __dirname;
@@ -10,22 +12,59 @@ const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const SESSION_TTL_MS = 1000 * 60 * 60 * 8;
 
+const SMTP_HOST = process.env.SMTP_HOST || '';
+const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
+const SMTP_USER = process.env.SMTP_USER || '';
+const SMTP_PASS = process.env.SMTP_PASS || '';
+const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER || 'noreply@localhost';
+const SMTP_SECURE = String(process.env.SMTP_SECURE || '').toLowerCase() === 'true' || SMTP_PORT === 465;
+
 const DEPARTMENTS = [
+  { id: 'partiet', name: 'Frågor om partiet' },
+  { id: 'material', name: 'Beställa brochyrer' },
+  { id: 'grafiskt-material', name: 'Beställa övrigt grafiskt material' },
+  { id: 'utskick', name: 'Utskick' },
+  { id: 'medlemskontroll', name: 'Medlemskontroll' },
   { id: 'it-support', name: 'IT-support' },
   { id: 'it', name: 'IT / Mjukvara' },
   { id: 'hemsida', name: 'Hemsidan' },
-  { id: 'grafikfabriken', name: 'Grafikfabriken' },
   { id: 'marknad', name: 'Marknad' },
   { id: 'facebook', name: 'Facebook' }
 ];
 
+const DEMO_PASSWORDS = {
+  'it-support': 'demo-it-support',
+  it: 'demo-it',
+  hemsida: 'demo-hemsida',
+  marknad: 'demo-marknad',
+  facebook: 'demo-facebook',
+  partiet: 'demo-partiet',
+  material: 'demo-material',
+  'grafiskt-material': 'demo-grafiskt',
+  utskick: 'demo-utskick',
+  medlemskontroll: 'demo-medlemskontroll'
+};
+
+const DEPARTMENT_EMAILS = {
+  partiet: 'info@ambitionsverige.se',
+  material: 'a-brochyrer@ambitionsverige.se',
+  medlemskontroll: 'medlemskontroll@ambitionsverige.se',
+  'it-support': 'itsupport@ambitionsverige.se',
+  it: 'Itsupport@ambitionsverige.se',
+  'grafiskt-material': 'thomas.akerberg@ambitionsverige.se'
+};
+
 const DEFAULT_USERS = [
-  { username: 'it-support', departmentId: 'it-support' },
-  { username: 'it-mjukvara', departmentId: 'it' },
-  { username: 'hemsida', departmentId: 'hemsida' },
-  { username: 'grafikfabriken', departmentId: 'grafikfabriken' },
-  { username: 'marknad', departmentId: 'marknad' },
-  { username: 'facebook', departmentId: 'facebook' }
+  { departmentId: 'it-support' },
+  { departmentId: 'it' },
+  { departmentId: 'hemsida' },
+  { departmentId: 'marknad' },
+  { departmentId: 'facebook' },
+  { departmentId: 'partiet' },
+  { departmentId: 'material' },
+  { departmentId: 'grafiskt-material' },
+  { departmentId: 'utskick' },
+  { departmentId: 'medlemskontroll' }
 ];
 
 const sessions = new Map();
@@ -50,9 +89,178 @@ function departmentNameById(departmentId) {
   return DEPARTMENTS.find((d) => d.id === departmentId)?.name || departmentId;
 }
 
+function departmentEmailById(departmentId) {
+  return DEPARTMENT_EMAILS[departmentId] || '';
+}
+
+function smtpIsConfigured() {
+  return !!SMTP_HOST;
+}
+
+function encodeHeader(value) {
+  const text = String(value || '');
+  return /^[\x00-\x7F]*$/.test(text) ? text : `=?UTF-8?B?${Buffer.from(text).toString('base64')}?=`;
+}
+
+function normalizeEmailBody(value) {
+  return String(value || '').replace(/\r?\n/g, '\r\n').replace(/^\./gm, '..');
+}
+
+function createSmtpConnection() {
+  return new Promise((resolve, reject) => {
+    const socket = SMTP_SECURE
+      ? tls.connect(SMTP_PORT, SMTP_HOST, { servername: SMTP_HOST })
+      : net.connect(SMTP_PORT, SMTP_HOST);
+
+    socket.setEncoding('utf8');
+    socket.setTimeout(15000);
+    socket.once('connect', () => resolve(socket));
+    socket.once('secureConnect', () => resolve(socket));
+    socket.once('error', reject);
+    socket.once('timeout', () => {
+      socket.destroy();
+      reject(new Error('SMTP timeout'));
+    });
+  });
+}
+
+function createSmtpReader(socket) {
+  let buffer = '';
+  const waiters = [];
+
+  socket.on('data', (chunk) => {
+    buffer += chunk;
+    flush();
+  });
+
+  socket.on('error', (err) => {
+    while (waiters.length) waiters.shift().reject(err);
+  });
+
+  function flush() {
+    if (!waiters.length) return;
+    const match = buffer.match(/(?:^|\r\n)(\d{3}) [^\r\n]*(?:\r\n|$)/);
+    if (!match) return;
+    const end = match.index + match[0].length;
+    const response = buffer.slice(0, end).trimEnd();
+    buffer = buffer.slice(end);
+    waiters.shift().resolve(response);
+    flush();
+  }
+
+  return () => new Promise((resolve, reject) => {
+    waiters.push({ resolve, reject });
+    flush();
+  });
+}
+
+async function smtpExpect(read, expectedCodes) {
+  const response = await read();
+  const code = Number(response.slice(0, 3));
+  if (!expectedCodes.includes(code)) {
+    throw new Error(`SMTP svarade ${response}`);
+  }
+  return response;
+}
+
+async function smtpCommand(socket, read, command, expectedCodes) {
+  socket.write(`${command}\r\n`);
+  return smtpExpect(read, expectedCodes);
+}
+
+async function upgradeSmtpToTls(socket, read) {
+  await smtpCommand(socket, read, 'STARTTLS', [220]);
+  return new Promise((resolve, reject) => {
+    const secureSocket = tls.connect({ socket, servername: SMTP_HOST }, () => resolve(secureSocket));
+    secureSocket.setEncoding('utf8');
+    secureSocket.setTimeout(15000);
+    secureSocket.once('error', reject);
+  });
+}
+
+function buildOrderEmail(order) {
+  const subject = `Ny beställning ${order.reference} - ${order.departmentName}`;
+  const files = (order.files || []).length
+    ? order.files.map((f) => `- ${f.name} (${f.size || 0} bytes)`).join('\n')
+    : 'Inga bilagor';
+  const text = [
+    `Ny beställning: ${order.reference}`,
+    '',
+    `Avdelning: ${order.departmentName}`,
+    `Skickad: ${order.createdAt}`,
+    '',
+    `Namn: ${order.name}`,
+    `E-post: ${order.email}`,
+    `Telefon: ${order.phone || '-'}`,
+    '',
+    'Meddelande:',
+    order.message,
+    '',
+    'Bilagor:',
+    files
+  ].join('\n');
+
+  return { subject, text };
+}
+
+async function sendOrderEmail(order) {
+  if (!order.recipientEmail) {
+    return { status: 'skipped', error: '' };
+  }
+  if (!smtpIsConfigured()) {
+    return { status: 'failed', error: 'SMTP_HOST är inte konfigurerad' };
+  }
+
+  const { subject, text } = buildOrderEmail(order);
+  let socket = await createSmtpConnection();
+  let read = createSmtpReader(socket);
+
+  try {
+    await smtpExpect(read, [220]);
+    await smtpCommand(socket, read, `EHLO ${SMTP_HOST}`, [250]);
+
+    if (!SMTP_SECURE) {
+      socket = await upgradeSmtpToTls(socket, read);
+      read = createSmtpReader(socket);
+      await smtpCommand(socket, read, `EHLO ${SMTP_HOST}`, [250]);
+    }
+
+    if (SMTP_USER || SMTP_PASS) {
+      const auth = Buffer.from(`\u0000${SMTP_USER}\u0000${SMTP_PASS}`).toString('base64');
+      await smtpCommand(socket, read, `AUTH PLAIN ${auth}`, [235]);
+    }
+
+    await smtpCommand(socket, read, `MAIL FROM:<${SMTP_FROM}>`, [250]);
+    await smtpCommand(socket, read, `RCPT TO:<${order.recipientEmail}>`, [250, 251]);
+    await smtpCommand(socket, read, 'DATA', [354]);
+
+    const message = [
+      `From: ${SMTP_FROM}`,
+      `To: ${order.recipientEmail}`,
+      `Reply-To: ${order.email}`,
+      `Subject: ${encodeHeader(subject)}`,
+      'MIME-Version: 1.0',
+      'Content-Type: text/plain; charset=UTF-8',
+      'Content-Transfer-Encoding: 8bit',
+      '',
+      normalizeEmailBody(text),
+      '.'
+    ].join('\r\n');
+
+    socket.write(`${message}\r\n`);
+    await smtpExpect(read, [250]);
+    await smtpCommand(socket, read, 'QUIT', [221]);
+    return { status: 'sent', error: '' };
+  } catch (err) {
+    return { status: 'failed', error: err.message || 'Mejlet kunde inte skickas' };
+  } finally {
+    socket.end();
+  }
+}
+
 function ensureDataFiles() {
   let createdUsers = false;
-  let initialPasswords = [];
+  let demoPasswords = [];
   fs.mkdirSync(DATA_DIR, { recursive: true });
 
   if (!fs.existsSync(ORDERS_FILE)) {
@@ -62,15 +270,9 @@ function ensureDataFiles() {
   if (!fs.existsSync(USERS_FILE)) {
     const users = DEFAULT_USERS.map((u) => {
       const salt = crypto.randomBytes(16).toString('hex');
-      const password = crypto.randomBytes(12).toString('base64url');
-      initialPasswords.push({
-        username: u.username,
-        departmentName: departmentNameById(u.departmentId),
-        password
-      });
+      const password = DEMO_PASSWORDS[u.departmentId];
       return {
         id: crypto.randomUUID(),
-        username: u.username,
         departmentId: u.departmentId,
         salt,
         passwordHash: hashPassword(password, salt),
@@ -81,7 +283,39 @@ function ensureDataFiles() {
     createdUsers = true;
   }
 
-  return { createdUsers, initialPasswords };
+  const users = safeReadJson(USERS_FILE, []);
+  let changedUsers = createdUsers;
+  for (const department of DEPARTMENTS) {
+    const password = DEMO_PASSWORDS[department.id];
+    if (!password) continue;
+
+    let user = users.find((u) => u.departmentId === department.id);
+    if (!user) {
+      user = {
+        id: crypto.randomUUID(),
+        departmentId: department.id,
+        createdAt: new Date().toISOString()
+      };
+      users.push(user);
+      changedUsers = true;
+    }
+
+    const salt = crypto.randomBytes(16).toString('hex');
+    user.salt = salt;
+    user.passwordHash = hashPassword(password, salt);
+    user.updatedAt = new Date().toISOString();
+    changedUsers = true;
+    demoPasswords.push({
+      departmentName: department.name,
+      password
+    });
+  }
+
+  if (changedUsers) {
+    writeJson(USERS_FILE, users);
+  }
+
+  return { createdUsers, demoPasswords };
 }
 
 function cleanExpiredSessions() {
@@ -122,7 +356,6 @@ function createSession(user) {
   const sid = crypto.randomBytes(24).toString('hex');
   const session = {
     userId: user.id,
-    username: user.username,
     departmentId: user.departmentId,
     departmentName: departmentNameById(user.departmentId),
     expiresAt: Date.now() + SESSION_TTL_MS
@@ -250,24 +483,30 @@ async function handleApi(req, res, url) {
 
   if (req.method === 'POST' && pathname === '/api/auth/login') {
     const body = await readBodyJson(req);
-    const username = sanitizeText(body.username, 64).toLowerCase();
+    const departmentId = sanitizeText(body.departmentId, 64);
     const password = typeof body.password === 'string' ? body.password : '';
 
-    if (!username || !password) {
-      sendJson(res, 400, { error: 'Användarnamn och lösenord krävs' });
+    if (!departmentId || !password) {
+      sendJson(res, 400, { error: 'Avdelning och lösenord krävs' });
+      return;
+    }
+
+    const department = DEPARTMENTS.find((d) => d.id === departmentId);
+    if (!department) {
+      sendJson(res, 400, { error: 'Ogiltig avdelning' });
       return;
     }
 
     const users = safeReadJson(USERS_FILE, []);
-    const user = users.find((u) => u.username.toLowerCase() === username);
+    const user = users.find((u) => u.departmentId === department.id);
     if (!user) {
-      sendJson(res, 401, { error: 'Fel användarnamn eller lösenord' });
+      sendJson(res, 401, { error: 'Fel avdelning eller lösenord' });
       return;
     }
 
     const candidate = hashPassword(password, user.salt);
     if (candidate !== user.passwordHash) {
-      sendJson(res, 401, { error: 'Fel användarnamn eller lösenord' });
+      sendJson(res, 401, { error: 'Fel avdelning eller lösenord' });
       return;
     }
 
@@ -277,7 +516,6 @@ async function handleApi(req, res, url) {
       200,
       {
         user: {
-          username: session.username,
           departmentId: session.departmentId,
           departmentName: session.departmentName
         }
@@ -305,7 +543,6 @@ async function handleApi(req, res, url) {
     sendJson(res, 200, {
       authenticated: true,
       user: {
-        username: session.username,
         departmentId: session.departmentId,
         departmentName: session.departmentName
       }
@@ -346,6 +583,10 @@ async function handleApi(req, res, url) {
       createdAt: new Date().toISOString(),
       departmentId: department.id,
       departmentName: department.name,
+      recipientEmail: departmentEmailById(department.id),
+      emailStatus: departmentEmailById(department.id) ? 'pending' : 'skipped',
+      emailError: '',
+      emailSentAt: '',
       status: 'new',
       message,
       name,
@@ -359,7 +600,24 @@ async function handleApi(req, res, url) {
     orders.unshift(order);
     saveOrders(orders);
 
-    sendJson(res, 201, { ok: true, order: { id: order.id, reference: order.reference } });
+    if (order.recipientEmail) {
+      const emailResult = await sendOrderEmail(order);
+      order.emailStatus = emailResult.status;
+      order.emailError = emailResult.error;
+      order.emailSentAt = emailResult.status === 'sent' ? new Date().toISOString() : '';
+      saveOrders(orders);
+    }
+
+    sendJson(res, 201, {
+      ok: true,
+      order: {
+        id: order.id,
+        reference: order.reference,
+        recipientEmail: order.recipientEmail,
+        emailStatus: order.emailStatus,
+        emailError: order.emailError
+      }
+    });
     return;
   }
 
@@ -479,10 +737,10 @@ const server = http.createServer(requestHandler);
 server.listen(PORT, () => {
   console.log(`Bestallningsportalen startad: http://localhost:${PORT}`);
   if (setup.createdUsers) {
-    console.log('users.json skapades med standardkonton. Byt losenord i data/users.json vid behov.');
-    console.log('Initiala inlogg (spara dessa nu):');
-    for (const u of setup.initialPasswords) {
-      console.log(`- ${u.username} (${u.departmentName}): ${u.password}`);
-    }
+    console.log('users.json skapades med standardkonton per avdelning.');
+  }
+  console.log('Demo-inloggningar:');
+  for (const u of setup.demoPasswords) {
+    console.log(`- ${u.departmentName}: ${u.password}`);
   }
 });

@@ -18,18 +18,28 @@ Servern startar på `http://localhost:3000` (eller `PORT` om satt).
 
 Beställningen sparas alltid i `data/orders.json`. Om vald avdelning har en definierad mottagaradress försöker servern även skicka ett mejl och sparar resultatet på ärendet.
 
-Konfigurera SMTP via miljövariabler:
+Konfigurera e-post via `.env` i projektroten:
 
 ```bash
-SMTP_HOST=smtp.example.com \
-SMTP_PORT=587 \
-SMTP_USER=anvandare@example.com \
-SMTP_PASS=losenord \
-SMTP_FROM=noreply@ambitionsverige.se \
-npm start
+MAIL_HOST=smtp.example.com
+MAIL_USER=anvandare@example.com
+MAIL_PASS=losenord
+MAIL_FROM=noreply@ambitionsverige.se
+PASSWORD_PARTIET=demo-partiet
+PASSWORD_MATERIAL=demo-material
+PASSWORD_GRAFISKT_MATERIAL=demo-grafiskt
+PASSWORD_UTSKICK=demo-utskick
+PASSWORD_MEDLEMSREGISTER=demo-medlemsregister
+PASSWORD_IT_SUPPORT=demo-it-support
+PASSWORD_IT=demo-it
+PASSWORD_HEMSIDA=demo-hemsida
+PASSWORD_MARKNAD=demo-marknad
+PASSWORD_FACEBOOK=demo-facebook
+SMTP_PORT=587
 ```
 
 För port 465 används TLS direkt. Annars använder servern STARTTLS.
+`MAIL_HOST`, `MAIL_USER` och `MAIL_PASS` används som gemensamma standardvärden för både SMTP och IMAP. `MAIL_FROM` är adressen som syns som avsändare i utgående mejl. `PASSWORD_*`-variablerna styr lösenorden för avdelningarna. Du kan fortfarande skriva över värden med `SMTP_*` eller `IMAP_*` om du behöver separata inställningar senare.
 
 ## Gruppinloggningar (standard)
 

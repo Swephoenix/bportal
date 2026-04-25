@@ -12,19 +12,55 @@ const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
 const SESSION_TTL_MS = 1000 * 60 * 60 * 8;
 
-const SMTP_HOST = process.env.SMTP_HOST || '';
+function loadEnvFile(filePath) {
+  if (!fs.existsSync(filePath)) return;
+
+  const lines = fs.readFileSync(filePath, 'utf8').split(/\r?\n/);
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('#')) continue;
+
+    const eqIndex = line.indexOf('=');
+    if (eqIndex === -1) continue;
+
+    const key = line.slice(0, eqIndex).trim();
+    if (!key || process.env[key] !== undefined) continue;
+
+    let value = line.slice(eqIndex + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    process.env[key] = value;
+  }
+}
+
+loadEnvFile(path.join(ROOT_DIR, '.env'));
+
+const MAIL_HOST = process.env.MAIL_HOST || '';
+const MAIL_USER = process.env.MAIL_USER || '';
+const MAIL_PASS = process.env.MAIL_PASS || '';
+const MAIL_FROM = process.env.MAIL_FROM || process.env.SMTP_FROM || MAIL_USER || 'noreply@localhost';
+
+const SMTP_HOST = process.env.SMTP_HOST || MAIL_HOST || '';
 const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
-const SMTP_USER = process.env.SMTP_USER || '';
-const SMTP_PASS = process.env.SMTP_PASS || '';
-const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER || 'noreply@localhost';
+const SMTP_USER = process.env.SMTP_USER || MAIL_USER || '';
+const SMTP_PASS = process.env.SMTP_PASS || MAIL_PASS || '';
+const SMTP_FROM = MAIL_FROM;
 const SMTP_SECURE = String(process.env.SMTP_SECURE || '').toLowerCase() === 'true' || SMTP_PORT === 465;
+const IMAP_HOST = process.env.IMAP_HOST || MAIL_HOST || '';
+const IMAP_USER = process.env.IMAP_USER || MAIL_USER || '';
+const IMAP_PASS = process.env.IMAP_PASS || MAIL_PASS || '';
 
 const DEPARTMENTS = [
   { id: 'partiet', name: 'Frågor om partiet' },
   { id: 'material', name: 'Beställa brochyrer' },
   { id: 'grafiskt-material', name: 'Beställa övrigt grafiskt material' },
   { id: 'utskick', name: 'Utskick' },
-  { id: 'medlemskontroll', name: 'Medlemskontroll' },
+  { id: 'medlemsregister', name: 'Medlemsregister' },
   { id: 'it-support', name: 'IT-support' },
   { id: 'it', name: 'IT / Mjukvara' },
   { id: 'hemsida', name: 'Hemsidan' },
@@ -32,7 +68,7 @@ const DEPARTMENTS = [
   { id: 'facebook', name: 'Facebook' }
 ];
 
-const DEMO_PASSWORDS = {
+const DEFAULT_DEPARTMENT_PASSWORDS = {
   'it-support': 'demo-it-support',
   it: 'demo-it',
   hemsida: 'demo-hemsida',
@@ -42,16 +78,33 @@ const DEMO_PASSWORDS = {
   material: 'demo-material',
   'grafiskt-material': 'demo-grafiskt',
   utskick: 'demo-utskick',
-  medlemskontroll: 'demo-medlemskontroll'
+  medlemsregister: 'demo-medlemsregister'
+};
+
+const DEPARTMENT_PASSWORD_ENV_KEYS = {
+  partiet: 'PASSWORD_PARTIET',
+  material: 'PASSWORD_MATERIAL',
+  'grafiskt-material': 'PASSWORD_GRAFISKT_MATERIAL',
+  utskick: 'PASSWORD_UTSKICK',
+  medlemsregister: 'PASSWORD_MEDLEMSREGISTER',
+  'it-support': 'PASSWORD_IT_SUPPORT',
+  it: 'PASSWORD_IT',
+  hemsida: 'PASSWORD_HEMSIDA',
+  marknad: 'PASSWORD_MARKNAD',
+  facebook: 'PASSWORD_FACEBOOK'
 };
 
 const DEPARTMENT_EMAILS = {
   partiet: 'info@ambitionsverige.se',
   material: 'a-brochyrer@ambitionsverige.se',
-  medlemskontroll: 'medlemskontroll@ambitionsverige.se',
+  medlemsregister: 'medlemsregister@ambitionsverige.se',
   'it-support': 'itsupport@ambitionsverige.se',
   it: 'Itsupport@ambitionsverige.se',
   'grafiskt-material': 'thomas.akerberg@ambitionsverige.se'
+};
+
+const DEPARTMENT_ID_ALIASES = {
+  medlemskontroll: 'medlemsregister'
 };
 
 const DEFAULT_USERS = [
@@ -64,7 +117,7 @@ const DEFAULT_USERS = [
   { departmentId: 'material' },
   { departmentId: 'grafiskt-material' },
   { departmentId: 'utskick' },
-  { departmentId: 'medlemskontroll' }
+  { departmentId: 'medlemsregister' }
 ];
 
 const sessions = new Map();
@@ -86,11 +139,19 @@ function writeJson(filePath, data) {
 }
 
 function departmentNameById(departmentId) {
-  return DEPARTMENTS.find((d) => d.id === departmentId)?.name || departmentId;
+  const normalizedId = DEPARTMENT_ID_ALIASES[departmentId] || departmentId;
+  return DEPARTMENTS.find((d) => d.id === normalizedId)?.name || normalizedId;
 }
 
 function departmentEmailById(departmentId) {
-  return DEPARTMENT_EMAILS[departmentId] || '';
+  const normalizedId = DEPARTMENT_ID_ALIASES[departmentId] || departmentId;
+  return DEPARTMENT_EMAILS[normalizedId] || '';
+}
+
+function departmentPasswordById(departmentId) {
+  const normalizedId = DEPARTMENT_ID_ALIASES[departmentId] || departmentId;
+  const envKey = DEPARTMENT_PASSWORD_ENV_KEYS[normalizedId];
+  return (envKey && process.env[envKey]) || DEFAULT_DEPARTMENT_PASSWORDS[normalizedId] || '';
 }
 
 function smtpIsConfigured() {
@@ -260,7 +321,7 @@ async function sendOrderEmail(order) {
 
 function ensureDataFiles() {
   let createdUsers = false;
-  let demoPasswords = [];
+  let departmentPasswords = [];
   fs.mkdirSync(DATA_DIR, { recursive: true });
 
   if (!fs.existsSync(ORDERS_FILE)) {
@@ -270,7 +331,7 @@ function ensureDataFiles() {
   if (!fs.existsSync(USERS_FILE)) {
     const users = DEFAULT_USERS.map((u) => {
       const salt = crypto.randomBytes(16).toString('hex');
-      const password = DEMO_PASSWORDS[u.departmentId];
+      const password = departmentPasswordById(u.departmentId);
       return {
         id: crypto.randomUUID(),
         departmentId: u.departmentId,
@@ -286,7 +347,7 @@ function ensureDataFiles() {
   const users = safeReadJson(USERS_FILE, []);
   let changedUsers = createdUsers;
   for (const department of DEPARTMENTS) {
-    const password = DEMO_PASSWORDS[department.id];
+    const password = departmentPasswordById(department.id);
     if (!password) continue;
 
     let user = users.find((u) => u.departmentId === department.id);
@@ -305,7 +366,7 @@ function ensureDataFiles() {
     user.passwordHash = hashPassword(password, salt);
     user.updatedAt = new Date().toISOString();
     changedUsers = true;
-    demoPasswords.push({
+    departmentPasswords.push({
       departmentName: department.name,
       password
     });
@@ -315,7 +376,7 @@ function ensureDataFiles() {
     writeJson(USERS_FILE, users);
   }
 
-  return { createdUsers, demoPasswords };
+  return { createdUsers, departmentPasswords };
 }
 
 function cleanExpiredSessions() {
@@ -739,8 +800,8 @@ server.listen(PORT, () => {
   if (setup.createdUsers) {
     console.log('users.json skapades med standardkonton per avdelning.');
   }
-  console.log('Demo-inloggningar:');
-  for (const u of setup.demoPasswords) {
+  console.log('Avdelningslösenord:');
+  for (const u of setup.departmentPasswords) {
     console.log(`- ${u.departmentName}: ${u.password}`);
   }
 });

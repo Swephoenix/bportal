@@ -25,6 +25,7 @@ MAIL_HOST=smtp.example.com
 MAIL_USER=anvandare@example.com
 MAIL_PASS=losenord
 MAIL_FROM=noreply@ambitionsverige.se
+MAIL_DEMO_MODE=true
 PASSWORD_PARTIET=demo-partiet
 PASSWORD_MATERIAL=demo-material
 PASSWORD_GRAFISKT_MATERIAL=demo-grafiskt
@@ -40,6 +41,7 @@ SMTP_PORT=587
 
 För port 465 används TLS direkt. Annars använder servern STARTTLS.
 `MAIL_HOST`, `MAIL_USER` och `MAIL_PASS` används som gemensamma standardvärden för både SMTP och IMAP. `MAIL_FROM` är adressen som syns som avsändare i utgående mejl. `PASSWORD_*`-variablerna styr lösenorden för avdelningarna. Du kan fortfarande skriva över värden med `SMTP_*` eller `IMAP_*` om du behöver separata inställningar senare.
+`MAIL_DEMO_MODE=true` stänger av faktisk mejlsändning men fortsätter spara beställningar normalt. Sätt `false` eller ta bort raden när du vill skicka riktiga mejl igen.
 
 ## Gruppinloggningar (standard)
 

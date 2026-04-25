@@ -44,6 +44,7 @@ const MAIL_HOST = process.env.MAIL_HOST || '';
 const MAIL_USER = process.env.MAIL_USER || '';
 const MAIL_PASS = process.env.MAIL_PASS || '';
 const MAIL_FROM = process.env.MAIL_FROM || process.env.SMTP_FROM || MAIL_USER || 'noreply@localhost';
+const MAIL_DEMO_MODE = String(process.env.MAIL_DEMO_MODE || '').toLowerCase() === 'true';
 
 const SMTP_HOST = process.env.SMTP_HOST || MAIL_HOST || '';
 const SMTP_PORT = Number(process.env.SMTP_PORT || 587);
@@ -266,6 +267,9 @@ function buildOrderEmail(order) {
 
 async function sendOrderEmail(order) {
   if (!order.recipientEmail) {
+    return { status: 'skipped', error: '' };
+  }
+  if (MAIL_DEMO_MODE) {
     return { status: 'skipped', error: '' };
   }
   if (!smtpIsConfigured()) {
@@ -611,6 +615,13 @@ async function handleApi(req, res, url) {
     return;
   }
 
+  if (req.method === 'GET' && pathname === '/api/config') {
+    sendJson(res, 200, {
+      mailDemoMode: MAIL_DEMO_MODE
+    });
+    return;
+  }
+
   if (req.method === 'POST' && pathname === '/api/orders') {
     const body = await readBodyJson(req);
 
@@ -803,5 +814,8 @@ server.listen(PORT, () => {
   console.log('Avdelningslösenord:');
   for (const u of setup.departmentPasswords) {
     console.log(`- ${u.departmentName}: ${u.password}`);
+  }
+  if (MAIL_DEMO_MODE) {
+    console.log('Mail-läge: demo mode aktivt, inga mejl skickas.');
   }
 });

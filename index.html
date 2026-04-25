@@ -52,6 +52,26 @@
 
     .admin-trigger:hover { background: var(--admin); color: white; }
 
+    .demo-badge {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 1500;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: #dc2626;
+      color: #fff;
+      font-size: 1.15rem;
+      font-weight: 900;
+      letter-spacing: 0;
+      text-transform: uppercase;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.16);
+      display: none;
+      pointer-events: none;
+    }
+
+    .demo-badge.visible { display: block; }
+
     .card {
       background: var(--card);
       border-radius: 16px;
@@ -240,6 +260,7 @@
   </style>
 </head>
 <body>
+  <div id="demoBadge" class="demo-badge" aria-hidden="true">Demo</div>
   <button class="admin-trigger" type="button" onclick="openAdminLogin()">Admin</button>
 
   <div class="page-shell">
@@ -457,6 +478,7 @@
     let currentStep = 1;
     let selectedDepartment = null;
     let currentUser = null;
+    let mailDemoMode = false;
 
     function $(id) { return document.getElementById(id); }
 
@@ -653,6 +675,17 @@
       }
     }
 
+    async function loadConfig() {
+      try {
+        const res = await fetch('/api/config');
+        const data = await res.json();
+        mailDemoMode = !!data.mailDemoMode;
+      } catch (_) {
+        mailDemoMode = false;
+      }
+      $('demoBadge').classList.toggle('visible', mailDemoMode);
+    }
+
     async function logout() {
       try {
         await fetch('/api/auth/logout', { method: 'POST' });
@@ -802,6 +835,7 @@
       renderAdminDepartments();
       bindEvents();
       updateSteps();
+      await loadConfig();
       await checkAuth();
     }
 

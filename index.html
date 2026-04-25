@@ -215,6 +215,61 @@
       align-items: center;
     }
 
+    .ticket-attachments {
+      margin: 10px 0 8px;
+    }
+
+    .ticket-attachments-title {
+      margin: 0 0 8px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0;
+    }
+
+    .attachment-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 8px;
+    }
+
+    .attachment-thumb {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 6px;
+      background: #fff;
+      cursor: pointer;
+      text-align: left;
+      width: 100%;
+      font: inherit;
+      color: inherit;
+      appearance: none;
+    }
+
+    .attachment-thumb:hover { border-color: var(--primary); box-shadow: 0 6px 14px rgba(0,0,0,0.06); }
+
+    .attachment-thumb img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      object-fit: cover;
+      border-radius: 8px;
+      background: #f8fafc;
+    }
+
+    .attachment-thumb .attachment-name {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .empty {
       border: 1px dashed var(--border);
       border-radius: 10px;
@@ -241,6 +296,55 @@
       background: #fff;
       border-radius: 14px;
       padding: 20px;
+    }
+
+    .image-modal-card {
+      max-width: 960px;
+    }
+
+    .image-modal-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .image-modal-title-wrap {
+      min-width: 0;
+    }
+
+    .image-modal-preview {
+      display: none;
+      width: 100%;
+      max-height: min(72vh, 720px);
+      object-fit: contain;
+      background: #fff;
+      border-radius: 12px;
+    }
+
+    .image-modal-preview.visible {
+      display: block;
+    }
+
+    .image-modal-object {
+      display: none;
+      width: 100%;
+      height: min(72vh, 720px);
+      background: #fff;
+      border: 0;
+      border-radius: 12px;
+    }
+
+    .image-modal-object.visible {
+      display: block;
+    }
+
+    .image-modal-caption {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      word-break: break-word;
     }
 
     .modal-title { margin: 0 0 10px; font-size: 1.1rem; }
@@ -398,10 +502,24 @@
     </div>
   </div>
 
+  <div id="imageModal" class="modal" aria-hidden="true" onclick="closeImageModal(event)">
+    <div class="modal-card image-modal-card" role="dialog" aria-modal="true" aria-labelledby="imageModalTitle">
+      <div class="image-modal-head">
+        <div class="image-modal-title-wrap">
+          <h3 id="imageModalTitle" class="modal-title" style="margin-bottom:4px;">Bildförhandsvisning</h3>
+          <div id="imageModalMeta" class="small-note" style="margin:0;"></div>
+        </div>
+        <button type="button" class="btn btn-secondary" onclick="closeImageModal()">Stäng</button>
+      </div>
+      <object id="imageModalObject" class="image-modal-object" type="image/svg+xml" aria-label="Bildförhandsvisning"></object>
+      <img id="imageModalPreview" class="image-modal-preview" alt="">
+      <div id="imageModalCaption" class="image-modal-caption"></div>
+    </div>
+  </div>
+
   <script>
     const DEPARTMENT_ICONS = {
       'it-support': '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M16 33h-3a7 7 0 0 1-7-7v-2a12 12 0 0 1 24 0v2a7 7 0 0 1-7 7h-3"/><path d="M16 33v-8a4 4 0 0 1 8 0v8"/><path d="M24 33h5a5 5 0 0 0 5-5v-2"/><path d="M30 36h-6"/></svg>',
-      it: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="10" width="32" height="24" rx="3"/><path d="M18 40h12"/><path d="M24 34v6"/><path d="m20 18-5 5 5 5"/><path d="m28 18 5 5-5 5"/></svg>',
       hemsida: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="7" y="10" width="34" height="28" rx="3"/><path d="M7 18h34"/><path d="M14 14h.1"/><path d="M20 14h.1"/><path d="M14 26h20"/><path d="M14 32h12"/></svg>',
       'grafiskt-material': '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 36h28"/><path d="M15 32 31 16l5 5-16 16h-5z"/><path d="m29 18 5 5"/><path d="M14 12h8"/><path d="M10 16h6"/></svg>',
       marknad: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 22h9l17-7v18l-17-7H8z"/><path d="M17 26v8a3 3 0 0 0 6 0v-5"/><path d="M38 20a6 6 0 0 1 0 8"/></svg>',
@@ -433,8 +551,8 @@
       },
       {
         id: 'utskick',
-        name: 'Utskick',
-        guideTitle: 'Utskick',
+        name: 'Medlemsutskick',
+        guideTitle: 'Medlemsutskick',
         guideText: 'Passar för: allt som handlar om att skicka ut meddelanden till medlemmar, till exempel e-post, brev, SMS, målgrupper och distributionsunderlag.'
       },
       {
@@ -445,15 +563,9 @@
       },
       {
         id: 'it-support',
-        name: 'IT-support',
-        guideTitle: 'IT-support (snabb hjälp)',
-        guideText: 'Passar för: lösenord/inlogg, e-postproblem, skrivare, nätverk/Wi-Fi, dator som krånglar, behörigheter och konton.'
-      },
-      {
-        id: 'it',
-        name: 'IT / Mjukvara',
-        guideTitle: 'IT / Mjukvara (system och licenser)',
-        guideText: 'Passar för: nya program/verktyg, licensbeställningar, integrationer, API, automation, nya funktioner och förbättringar i interna system.'
+        name: 'IT-support / Mjukvara',
+        guideTitle: 'IT-support / Mjukvara',
+        guideText: 'Passar för: lösenord/inlogg, e-postproblem, skrivare, nätverk/Wi-Fi, dator som krånglar, behörigheter, konton, nya program, licenser, integrationer, API, automation och interna system.'
       },
       {
         id: 'hemsida',
@@ -469,9 +581,9 @@
       },
       {
         id: 'facebook',
-        name: 'Facebook',
-        guideTitle: 'Facebook (socialt och community)',
-        guideText: 'Passar för: inlägg på Facebook, moderering, kommentarer, innehållskalender, publicering och community-frågor.'
+        name: 'Utskick i Sociala medier',
+        guideTitle: 'Utskick i Sociala medier',
+        guideText: 'Passar för: inlägg i sociala medier, moderering, kommentarer, innehållskalender, publicering och community-frågor.'
       }
     ];
 
@@ -479,6 +591,7 @@
     let selectedDepartment = null;
     let currentUser = null;
     let mailDemoMode = false;
+    let activeImageAttachment = null;
 
     function $(id) { return document.getElementById(id); }
 
@@ -565,6 +678,43 @@
       }
     }
 
+    function openImageModal(reference, name, src, type) {
+      activeImageAttachment = { reference, name, src, type };
+      $('imageModalTitle').textContent = name || 'Bildförhandsvisning';
+      $('imageModalMeta').textContent = reference ? 'Ärende ' + reference : '';
+      $('imageModalCaption').textContent = type ? type : '';
+      const isSvg = String(type || '').includes('svg') || /\.svg(?:$|\?)/i.test(src || '');
+      $('imageModalPreview').classList.toggle('visible', !isSvg);
+      $('imageModalObject').classList.toggle('visible', isSvg);
+      if (isSvg) {
+        $('imageModalObject').data = src;
+        $('imageModalObject').setAttribute('type', 'image/svg+xml');
+        $('imageModalObject').setAttribute('aria-label', name || 'Bildförhandsvisning');
+      } else {
+        $('imageModalPreview').src = src;
+        $('imageModalPreview').alt = name || 'Bildförhandsvisning';
+      }
+      $('imageModal').classList.add('active');
+      $('imageModal').setAttribute('aria-hidden', 'false');
+    }
+
+    function closeImageModal(event) {
+      const modal = $('imageModal');
+      if (!event || event.target === modal) {
+        modal.classList.remove('active');
+        modal.setAttribute('aria-hidden', 'true');
+        $('imageModalPreview').removeAttribute('src');
+        $('imageModalPreview').alt = '';
+        $('imageModalObject').removeAttribute('data');
+        $('imageModalTitle').textContent = 'Bildförhandsvisning';
+        $('imageModalMeta').textContent = '';
+        $('imageModalCaption').textContent = '';
+        $('imageModalPreview').classList.remove('visible');
+        $('imageModalObject').classList.remove('visible');
+        activeImageAttachment = null;
+      }
+    }
+
     function saveMessageFromModal() {
       $('message').value = $('messageModalField').value;
       closeMessageModal();
@@ -573,6 +723,31 @@
     function updateFileNames() {
       const files = Array.from($('file').files || []);
       $('fileNames').textContent = files.length ? files.map((f) => f.name).join(', ') : 'Inga filer valda.';
+    }
+
+    function readFileAsDataUrl(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result || ''));
+        reader.onerror = () => reject(reader.error || new Error('Kunde inte läsa filen'));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    async function prepareAttachments(files) {
+      return Promise.all(files.map(async (file) => {
+        const item = {
+          name: file.name,
+          size: file.size,
+          type: file.type || ''
+        };
+
+        if ((file.type || '').startsWith('image/')) {
+          item.dataUrl = await readFileAsDataUrl(file);
+        }
+
+        return item;
+      }));
     }
 
     async function submitOrder(e) {
@@ -592,7 +767,7 @@
         name: $('name').value.trim(),
         email: $('email').value.trim(),
         phone: $('phone').value.trim(),
-        files: Array.from($('file').files || []).map((f) => ({ name: f.name, size: f.size }))
+        files: await prepareAttachments(Array.from($('file').files || []))
       };
 
       if (!payload.message || !payload.name || !payload.email) {
@@ -746,9 +921,33 @@
 
       root.innerHTML = orders.map((o) => {
         const files = (o.files || []).length ? o.files.map((f) => escapeHtml(f.name)).join(', ') : 'Inga bilagor';
+        const images = (o.files || [])
+          .filter((f) => f.kind === 'image' && (f.previewUrl || f.attachmentId))
+          .map((f) => ({
+            ...f,
+            previewUrl: f.previewUrl || ('/api/orders/' + encodeURIComponent(o.id) + '/attachments/' + encodeURIComponent(f.attachmentId || ''))
+          }));
         const emailStatus = o.emailStatus === 'sent'
           ? 'Mejl skickat'
           : (o.emailStatus === 'failed' ? 'Mejl misslyckades' : (o.emailStatus === 'pending' ? 'Mejl väntar' : 'Inget mejl'));
+        const imageHtml = images.length ? (
+          '<div class="ticket-attachments">' +
+            '<div class="ticket-attachments-title">Bilder</div>' +
+            '<div class="attachment-grid">' +
+              images.map((f) => (
+                '<button type="button" class="attachment-thumb" ' +
+                  'data-reference="' + escapeHtml(o.reference) + '" ' +
+                  'data-name="' + escapeHtml(f.name) + '" ' +
+                  'data-src="' + escapeHtml(f.previewUrl || '') + '" ' +
+                  'data-type="' + escapeHtml(f.type || '') + '" ' +
+                  'onclick="openImageModal(this.dataset.reference, this.dataset.name, this.dataset.src, this.dataset.type)">' +
+                  '<img src="' + escapeHtml(f.previewUrl || '') + '" alt="' + escapeHtml(f.name) + '">' +
+                  '<span class="attachment-name">' + escapeHtml(f.name) + '</span>' +
+                '</button>'
+              )).join('') +
+            '</div>' +
+          '</div>'
+        ) : '';
         return (
           '<article class="ticket">' +
             '<div class="ticket-head">' +
@@ -758,6 +957,7 @@
             '<div class="meta">' + formatDate(o.createdAt) + ' | ' + escapeHtml(o.name) + ' | ' + escapeHtml(o.email) + (o.phone ? ' | ' + escapeHtml(o.phone) : '') + '</div>' +
             (o.recipientEmail ? '<div class="small-note">Mottagare: ' + escapeHtml(o.recipientEmail) + ' | ' + emailStatus + (o.emailError ? ': ' + escapeHtml(o.emailError) : '') + '</div>' : '') +
             '<div class="message">' + escapeHtml(o.message) + '</div>' +
+            imageHtml +
             '<div class="small-note" style="margin-bottom:8px;">Bilagor: ' + files + '</div>' +
             '<div class="ticket-actions">' +
               '<input id="note-' + escapeHtml(o.id) + '" type="text" value="' + escapeHtml(o.adminNote || '') + '" placeholder="Intern anteckning">' +
@@ -826,7 +1026,10 @@
       $('adminLoginForm').addEventListener('submit', login);
       $('file').addEventListener('change', updateFileNames);
       document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') closeMessageModal();
+        if (e.key === 'Escape') {
+          closeMessageModal();
+          closeImageModal();
+        }
       });
     }
 

@@ -1,4 +1,5 @@
 data/*.json
+data/attachments/
 .env
 .DS_Store
 node_modules/

@@ -5,12 +5,14 @@ const crypto = require('crypto');
 const net = require('net');
 const tls = require('tls');
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3005;
 const ROOT_DIR = __dirname;
 const DATA_DIR = path.join(ROOT_DIR, 'data');
 const ORDERS_FILE = path.join(DATA_DIR, 'orders.json');
 const USERS_FILE = path.join(DATA_DIR, 'users.json');
+const ATTACHMENTS_DIR = path.join(DATA_DIR, 'attachments');
 const SESSION_TTL_MS = 1000 * 60 * 60 * 8;
+const BODY_LIMIT_BYTES = 20 * 1024 * 1024;
 
 function loadEnvFile(filePath) {
   if (!fs.existsSync(filePath)) return;
@@ -60,18 +62,16 @@ const DEPARTMENTS = [
   { id: 'partiet', name: 'Frågor om partiet' },
   { id: 'material', name: 'Beställa brochyrer' },
   { id: 'grafiskt-material', name: 'Beställa övrigt grafiskt material' },
-  { id: 'utskick', name: 'Utskick' },
+  { id: 'utskick', name: 'Medlemsutskick' },
   { id: 'medlemsregister', name: 'Medlemsregister' },
-  { id: 'it-support', name: 'IT-support' },
-  { id: 'it', name: 'IT / Mjukvara' },
+  { id: 'it-support', name: 'IT-support / Mjukvara' },
   { id: 'hemsida', name: 'Hemsidan' },
   { id: 'marknad', name: 'Marknad' },
-  { id: 'facebook', name: 'Facebook' }
+  { id: 'facebook', name: 'Utskick i Sociala medier' }
 ];
 
 const DEFAULT_DEPARTMENT_PASSWORDS = {
   'it-support': 'demo-it-support',
-  it: 'demo-it',
   hemsida: 'demo-hemsida',
   marknad: 'demo-marknad',
   facebook: 'demo-facebook',
@@ -89,7 +89,6 @@ const DEPARTMENT_PASSWORD_ENV_KEYS = {
   utskick: 'PASSWORD_UTSKICK',
   medlemsregister: 'PASSWORD_MEDLEMSREGISTER',
   'it-support': 'PASSWORD_IT_SUPPORT',
-  it: 'PASSWORD_IT',
   hemsida: 'PASSWORD_HEMSIDA',
   marknad: 'PASSWORD_MARKNAD',
   facebook: 'PASSWORD_FACEBOOK'
@@ -100,17 +99,16 @@ const DEPARTMENT_EMAILS = {
   material: 'a-brochyrer@ambitionsverige.se',
   medlemsregister: 'medlemsregister@ambitionsverige.se',
   'it-support': 'itsupport@ambitionsverige.se',
-  it: 'Itsupport@ambitionsverige.se',
   'grafiskt-material': 'thomas.akerberg@ambitionsverige.se'
 };
 
 const DEPARTMENT_ID_ALIASES = {
+  it: 'it-support',
   medlemskontroll: 'medlemsregister'
 };
 
 const DEFAULT_USERS = [
   { departmentId: 'it-support' },
-  { departmentId: 'it' },
   { departmentId: 'hemsida' },
   { departmentId: 'marknad' },
   { departmentId: 'facebook' },
@@ -139,6 +137,10 @@ function writeJson(filePath, data) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
 }
 
+function ensureDir(filePath) {
+  fs.mkdirSync(filePath, { recursive: true });
+}
+
 function departmentNameById(departmentId) {
   const normalizedId = DEPARTMENT_ID_ALIASES[departmentId] || departmentId;
   return DEPARTMENTS.find((d) => d.id === normalizedId)?.name || normalizedId;
@@ -153,6 +155,60 @@ function departmentPasswordById(departmentId) {
   const normalizedId = DEPARTMENT_ID_ALIASES[departmentId] || departmentId;
   const envKey = DEPARTMENT_PASSWORD_ENV_KEYS[normalizedId];
   return (envKey && process.env[envKey]) || DEFAULT_DEPARTMENT_PASSWORDS[normalizedId] || '';
+}
+
+function normalizeOrder(order) {
+  if (!order || typeof order !== 'object') return order;
+  const normalizedId = DEPARTMENT_ID_ALIASES[order.departmentId] || order.departmentId;
+  if (normalizedId === order.departmentId) return order;
+  return {
+    ...order,
+    departmentId: normalizedId,
+    departmentName: departmentNameById(normalizedId),
+    recipientEmail: departmentEmailById(normalizedId)
+  };
+}
+
+function getAttachmentExtFromMime(mimeType) {
+  const normalized = String(mimeType || '').toLowerCase();
+  if (normalized === 'image/jpeg') return '.jpg';
+  if (normalized === 'image/png') return '.png';
+  if (normalized === 'image/gif') return '.gif';
+  if (normalized === 'image/webp') return '.webp';
+  if (normalized === 'image/bmp') return '.bmp';
+  if (normalized === 'image/svg+xml') return '.svg';
+  return '';
+}
+
+function decodeDataUrl(dataUrl) {
+  const match = String(dataUrl || '').match(/^data:([^;,]+);base64,(.+)$/);
+  if (!match) return null;
+  return {
+    mimeType: match[1],
+    buffer: Buffer.from(match[2], 'base64')
+  };
+}
+
+function parseImageAttachment(file) {
+  const dataUrl = typeof file?.dataUrl === 'string' ? file.dataUrl : '';
+  const decoded = decodeDataUrl(dataUrl);
+  if (!decoded || !String(decoded.mimeType).startsWith('image/')) {
+    return null;
+  }
+
+  const attachmentId = crypto.randomUUID();
+  const ext = getAttachmentExtFromMime(decoded.mimeType) || path.extname(sanitizeText(file?.name || '', 200)).toLowerCase() || '.img';
+
+  return {
+    attachmentId,
+    mimeType: decoded.mimeType,
+    buffer: decoded.buffer,
+    storageName: `${attachmentId}${ext}`
+  };
+}
+
+function attachmentPreviewUrl(orderId, attachmentId) {
+  return `/api/orders/${encodeURIComponent(orderId)}/attachments/${encodeURIComponent(attachmentId)}`;
 }
 
 function smtpIsConfigured() {
@@ -326,7 +382,8 @@ async function sendOrderEmail(order) {
 function ensureDataFiles() {
   let createdUsers = false;
   let departmentPasswords = [];
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+  ensureDir(DATA_DIR);
+  ensureDir(ATTACHMENTS_DIR);
 
   if (!fs.existsSync(ORDERS_FILE)) {
     writeJson(ORDERS_FILE, []);
@@ -349,6 +406,11 @@ function ensureDataFiles() {
   }
 
   const users = safeReadJson(USERS_FILE, []);
+  for (const user of users) {
+    if (user && user.departmentId) {
+      user.departmentId = DEPARTMENT_ID_ALIASES[user.departmentId] || user.departmentId;
+    }
+  }
   let changedUsers = createdUsers;
   for (const department of DEPARTMENTS) {
     const password = departmentPasswordById(department.id);
@@ -491,7 +553,7 @@ function readBodyJson(req) {
     let size = 0;
     req.on('data', (chunk) => {
       size += chunk.length;
-      if (size > 1024 * 1024) {
+      if (size > BODY_LIMIT_BYTES) {
         reject(new Error('Payload too large'));
         req.destroy();
         return;
@@ -536,7 +598,7 @@ function requireAuth(req, res) {
 }
 
 function getOrders() {
-  return safeReadJson(ORDERS_FILE, []);
+  return safeReadJson(ORDERS_FILE, []).map(normalizeOrder);
 }
 
 function saveOrders(orders) {
@@ -615,6 +677,48 @@ async function handleApi(req, res, url) {
     return;
   }
 
+  if (req.method === 'GET' && pathname.startsWith('/api/orders/') && pathname.includes('/attachments/')) {
+    const session = requireAuth(req, res);
+    if (!session) return;
+
+    const parts = pathname.split('/').filter(Boolean);
+    const orderId = parts[2];
+    const attachmentId = parts[4];
+    if (!orderId || !attachmentId) {
+      sendJson(res, 400, { error: 'Ogiltig bilaga' });
+      return;
+    }
+
+    const orders = getOrders();
+    const order = orders.find((o) => o.id === orderId && o.departmentId === session.departmentId);
+    if (!order) {
+      sendJson(res, 404, { error: 'Ärende hittades inte' });
+      return;
+    }
+
+    const attachment = (order.files || []).find((f) => f.attachmentId === attachmentId && f.kind === 'image');
+    if (!attachment) {
+      sendJson(res, 404, { error: 'Bilden hittades inte' });
+      return;
+    }
+
+    const filePath = path.join(ATTACHMENTS_DIR, orderId, attachment.storageName || '');
+    if (!fs.existsSync(filePath) || fs.statSync(filePath).isDirectory()) {
+      sendJson(res, 404, { error: 'Bilden hittades inte' });
+      return;
+    }
+
+    const content = fs.readFileSync(filePath);
+    res.writeHead(200, {
+      'Content-Type': attachment.type || 'application/octet-stream',
+      'Content-Length': content.length,
+      'Cache-Control': 'private, no-store',
+      'X-Content-Type-Options': 'nosniff'
+    });
+    res.end(content);
+    return;
+  }
+
   if (req.method === 'GET' && pathname === '/api/config') {
     sendJson(res, 200, {
       mailDemoMode: MAIL_DEMO_MODE
@@ -625,20 +729,15 @@ async function handleApi(req, res, url) {
   if (req.method === 'POST' && pathname === '/api/orders') {
     const body = await readBodyJson(req);
 
+    const orderId = crypto.randomUUID();
     const departmentId = sanitizeText(body.departmentId, 64);
     const department = DEPARTMENTS.find((d) => d.id === departmentId);
     const message = sanitizeText(body.message, 4000);
     const name = sanitizeText(body.name, 120);
     const email = sanitizeText(body.email, 120);
     const phone = sanitizeText(body.phone || '', 60);
-    const files = Array.isArray(body.files)
-      ? body.files
-          .map((f) => ({
-            name: sanitizeText(f?.name || '', 200),
-            size: Number(f?.size || 0)
-          }))
-          .filter((f) => f.name)
-      : [];
+    const files = [];
+    const imageAttachments = [];
 
     if (!department) {
       sendJson(res, 400, { error: 'Ogiltig avdelning' });
@@ -649,8 +748,53 @@ async function handleApi(req, res, url) {
       return;
     }
 
+    if (Array.isArray(body.files)) {
+      const attachmentDir = path.join(ATTACHMENTS_DIR, orderId);
+      ensureDir(attachmentDir);
+
+      for (const file of body.files) {
+        const nameValue = sanitizeText(file?.name || '', 200);
+        if (!nameValue) continue;
+
+        const sizeValue = Number(file?.size || 0);
+        const typeValue = sanitizeText(file?.type || '', 120);
+        const image = parseImageAttachment(file);
+        if (image) {
+          const filePath = path.join(attachmentDir, image.storageName);
+          fs.writeFileSync(filePath, image.buffer);
+          const previewUrl = attachmentPreviewUrl(orderId, image.attachmentId);
+          files.push({
+            attachmentId: image.attachmentId,
+            kind: 'image',
+            name: nameValue,
+            size: sizeValue,
+            type: image.mimeType,
+            storageName: image.storageName,
+            previewUrl
+          });
+          imageAttachments.push({
+            attachmentId: image.attachmentId,
+            kind: 'image',
+            name: nameValue,
+            size: sizeValue,
+            type: image.mimeType,
+            storageName: image.storageName,
+            previewUrl
+          });
+          continue;
+        }
+
+        files.push({
+          kind: 'file',
+          name: nameValue,
+          size: sizeValue,
+          type: typeValue
+        });
+      }
+    }
+
     const order = {
-      id: crypto.randomUUID(),
+      id: orderId,
       reference: randomReference(),
       createdAt: new Date().toISOString(),
       departmentId: department.id,
@@ -665,6 +809,7 @@ async function handleApi(req, res, url) {
       email,
       phone,
       files,
+      attachments: imageAttachments,
       adminNote: ''
     };
 

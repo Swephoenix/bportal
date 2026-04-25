@@ -12,13 +12,13 @@ Systemet är nu ett riktigt serverbaserat system med:
 npm start
 ```
 
-Servern startar på `http://localhost:3000` (eller `PORT` om satt).
+Servern startar på `http://localhost:3005` (eller `PORT` om satt).
 
 ## Mejlsändning
 
 Beställningen sparas alltid i `data/orders.json`. Om vald avdelning har en definierad mottagaradress försöker servern även skicka ett mejl och sparar resultatet på ärendet.
 
-Konfigurera e-post via `.env` i projektroten:
+Konfigurera e-post via `.env` i projektroten. En mall finns i `.env.example`:
 
 ```bash
 MAIL_HOST=smtp.example.com
@@ -29,10 +29,8 @@ MAIL_DEMO_MODE=true
 PASSWORD_PARTIET=demo-partiet
 PASSWORD_MATERIAL=demo-material
 PASSWORD_GRAFISKT_MATERIAL=demo-grafiskt
-PASSWORD_UTSKICK=demo-utskick
 PASSWORD_MEDLEMSREGISTER=demo-medlemsregister
 PASSWORD_IT_SUPPORT=demo-it-support
-PASSWORD_IT=demo-it
 PASSWORD_HEMSIDA=demo-hemsida
 PASSWORD_MARKNAD=demo-marknad
 PASSWORD_FACEBOOK=demo-facebook
@@ -59,5 +57,4 @@ Varje avdelning väljs från en dropdown i admininloggningen och ser bara sina e
 
 ## Notering
 
-Uppladdade filer sparas som filmetadata (filnamn/storlek) i ärendet.
-Själva filinnehållet lagras inte i denna version.
+Bilagor sparas som metadata i ärendet, och uppladdade bilder lagras också på servern så att de kan visas i adminpanelen med förhandsvisning.

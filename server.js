@@ -60,6 +60,7 @@ const IMAP_PASS = process.env.IMAP_PASS || MAIL_PASS || '';
 
 const DEPARTMENTS = [
   { id: 'partiet', name: 'Frågor om partiet' },
+  { id: 'facebook', name: 'Utskick i Sociala medier' },
   { id: 'material', name: 'Beställa brochyrer' },
   { id: 'grafiskt-material', name: 'Beställa övrigt grafiskt material' },
   { id: 'utskick', name: 'Medlemsutskick' },
@@ -67,7 +68,7 @@ const DEPARTMENTS = [
   { id: 'it-support', name: 'IT-support / Mjukvara' },
   { id: 'hemsida', name: 'Hemsidan' },
   { id: 'marknad', name: 'Marknad' },
-  { id: 'facebook', name: 'Utskick i Sociala medier' }
+  { id: 'hr', name: 'HR' }
 ];
 
 const DEFAULT_DEPARTMENT_PASSWORDS = {
@@ -76,6 +77,7 @@ const DEFAULT_DEPARTMENT_PASSWORDS = {
   marknad: 'demo-marknad',
   facebook: 'demo-facebook',
   partiet: 'demo-partiet',
+  hr: 'demo-hr',
   material: 'demo-material',
   'grafiskt-material': 'demo-grafiskt',
   utskick: 'demo-utskick',
@@ -84,6 +86,7 @@ const DEFAULT_DEPARTMENT_PASSWORDS = {
 
 const DEPARTMENT_PASSWORD_ENV_KEYS = {
   partiet: 'PASSWORD_PARTIET',
+  hr: 'PASSWORD_HR',
   material: 'PASSWORD_MATERIAL',
   'grafiskt-material': 'PASSWORD_GRAFISKT_MATERIAL',
   utskick: 'PASSWORD_UTSKICK',
@@ -96,6 +99,7 @@ const DEPARTMENT_PASSWORD_ENV_KEYS = {
 
 const DEPARTMENT_EMAILS = {
   partiet: 'info@ambitionsverige.se',
+  hr: 'hr@ambitionsverige.se',
   material: 'a-brochyrer@ambitionsverige.se',
   medlemsregister: 'medlemsregister@ambitionsverige.se',
   'it-support': 'itsupport@ambitionsverige.se',
@@ -113,6 +117,7 @@ const DEFAULT_USERS = [
   { departmentId: 'marknad' },
   { departmentId: 'facebook' },
   { departmentId: 'partiet' },
+  { departmentId: 'hr' },
   { departmentId: 'material' },
   { departmentId: 'grafiskt-material' },
   { departmentId: 'utskick' },

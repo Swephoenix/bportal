@@ -60,7 +60,12 @@ const IMAP_PASS = process.env.IMAP_PASS || MAIL_PASS || '';
 
 const DEPARTMENTS = [
   { id: 'partiet', name: 'Frågor om partiet' },
+  { id: 'valorganisation', name: 'Valorganisation' },
   { id: 'facebook', name: 'Utskick i Sociala medier' },
+  { id: 'skribent', name: 'Skribentgruppen' },
+  { id: 'film', name: 'Filmgruppen' },
+  { id: 'juridik', name: 'Juridikgruppen' },
+  { id: 'sekretessavtal', name: 'Sekretessavtal' },
   { id: 'material', name: 'Beställa brochyrer' },
   { id: 'grafiskt-material', name: 'Beställa övrigt grafiskt material' },
   { id: 'utskick', name: 'Medlemsutskick' },
@@ -78,6 +83,11 @@ const DEFAULT_DEPARTMENT_PASSWORDS = {
   facebook: 'demo-facebook',
   partiet: 'demo-partiet',
   hr: 'demo-hr',
+  valorganisation: 'demo-val',
+  juridik: 'demo-juridik',
+  skribent: 'demo-skribent',
+  film: 'demo-film',
+  sekretessavtal: 'demo-sekretess',
   material: 'demo-material',
   'grafiskt-material': 'demo-grafiskt',
   utskick: 'demo-utskick',
@@ -87,6 +97,11 @@ const DEFAULT_DEPARTMENT_PASSWORDS = {
 const DEPARTMENT_PASSWORD_ENV_KEYS = {
   partiet: 'PASSWORD_PARTIET',
   hr: 'PASSWORD_HR',
+  valorganisation: 'PASSWORD_VALORGANISATION',
+  juridik: 'PASSWORD_JURIDIK',
+  skribent: 'PASSWORD_SKRIBENT',
+  film: 'PASSWORD_FILM',
+  sekretessavtal: 'PASSWORD_SEKRETESSAVTAL',
   material: 'PASSWORD_MATERIAL',
   'grafiskt-material': 'PASSWORD_GRAFISKT_MATERIAL',
   utskick: 'PASSWORD_UTSKICK',
@@ -100,6 +115,11 @@ const DEPARTMENT_PASSWORD_ENV_KEYS = {
 const DEPARTMENT_EMAILS = {
   partiet: 'info@ambitionsverige.se',
   hr: 'hr@ambitionsverige.se',
+  valorganisation: 'val@ambitionsverige.se',
+  juridik: 'juridik@ambitionsverige.se',
+  sekretessavtal: 'juridik@ambitionsverige.se',
+  skribent: 'skribent@ambitionsverige.se',
+  film: 'film@ambitionsverige.se',
   material: 'a-brochyrer@ambitionsverige.se',
   medlemsregister: 'medlemsregister@ambitionsverige.se',
   'it-support': 'itsupport@ambitionsverige.se',
@@ -118,6 +138,11 @@ const DEFAULT_USERS = [
   { departmentId: 'facebook' },
   { departmentId: 'partiet' },
   { departmentId: 'hr' },
+  { departmentId: 'valorganisation' },
+  { departmentId: 'juridik' },
+  { departmentId: 'sekretessavtal' },
+  { departmentId: 'skribent' },
+  { departmentId: 'film' },
   { departmentId: 'material' },
   { departmentId: 'grafiskt-material' },
   { departmentId: 'utskick' },
@@ -519,7 +544,7 @@ function sendText(res, statusCode, text, contentType = 'text/plain; charset=utf-
 }
 
 function serveStatic(req, res, pathname) {
-  const allowedPublic = new Set(['/', '/index.html', '/logo.png']);
+  const allowedPublic = new Set(['/', '/index.html', '/logo.png', '/paragraftecken.svg', '/socmedialinelogos.svg']);
   if (!allowedPublic.has(pathname)) {
     sendText(res, 404, 'Not found');
     return;
@@ -612,6 +637,19 @@ function saveOrders(orders) {
 
 async function handleApi(req, res, url) {
   const pathname = url.pathname;
+
+  if (req.method === 'POST' && pathname === '/api/auth/portal-login') {
+    const body = await readBodyJson(req);
+    const user = sanitizeText(body.user, 64);
+    const pass = typeof body.pass === 'string' ? body.pass : '';
+
+    if (user === 'user' && pass === 'user') {
+      sendJson(res, 200, { ok: true });
+    } else {
+      sendJson(res, 401, { error: 'Fel användarnamn eller lösenord' });
+    }
+    return;
+  }
 
   if (req.method === 'POST' && pathname === '/api/auth/login') {
     const body = await readBodyJson(req);

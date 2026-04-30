@@ -111,6 +111,11 @@
       margin: 0 auto 8px;
       color: inherit;
     }
+    .dept-icon-facebook {
+      width: 236px;
+      height: 56px;
+      margin-bottom: 0;
+    }
     .dept-icon svg {
       display: block;
       width: 100%;
@@ -120,6 +125,12 @@
       stroke-width: 1.8;
       stroke-linecap: round;
       stroke-linejoin: round;
+    }
+    .dept-icon img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
     }
     .dept-hint {
       margin-top: 14px;
@@ -373,7 +384,26 @@
     </div>
 
     <div class="card">
-      <div id="view-portal" class="view active">
+      <div id="view-login" class="view active">
+        <h2>Välkommen</h2>
+        <p class="desc">Logga in för att använda beställningsportalen.</p>
+        <form id="portalLoginForm">
+          <div class="form-group">
+            <label for="portalUser">Användarnamn</label>
+            <input id="portalUser" type="text" required autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label for="portalPass">Lösenord</label>
+            <input id="portalPass" type="password" required autocomplete="current-password">
+          </div>
+          <div id="portalLoginStatus" class="status"></div>
+          <div class="btn-row">
+            <button type="submit" class="btn btn-primary">Logga in</button>
+          </div>
+        </form>
+      </div>
+
+      <div id="view-portal" class="view">
         <div class="progress"><div id="progressFill" class="progress-fill"></div></div>
 
         <form id="orderForm">
@@ -523,12 +553,17 @@
       hemsida: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="7" y="10" width="34" height="28" rx="3"/><path d="M7 18h34"/><path d="M14 14h.1"/><path d="M20 14h.1"/><path d="M14 26h20"/><path d="M14 32h12"/></svg>',
       'grafiskt-material': '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M10 36h28"/><path d="M15 32 31 16l5 5-16 16h-5z"/><path d="m29 18 5 5"/><path d="M14 12h8"/><path d="M10 16h6"/></svg>',
       marknad: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M8 22h9l17-7v18l-17-7H8z"/><path d="M17 26v8a3 3 0 0 0 6 0v-5"/><path d="M38 20a6 6 0 0 1 0 8"/></svg>',
-      facebook: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="9" width="32" height="28" rx="5"/><path d="M17 21h14"/><path d="M17 28h9"/><path d="M18 37l6-6h10"/></svg>',
+      facebook: '<img src="/socmedialinelogos.svg" alt="" aria-hidden="true">',
       partiet: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M13 15h22a6 6 0 0 1 6 6v5a6 6 0 0 1-6 6H24l-8 7v-7h-3a6 6 0 0 1-6-6v-5a6 6 0 0 1 6-6z"/><path d="M24 27v-.5a4 4 0 1 0-4-4"/><path d="M24 32h.1"/></svg>',
       material: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M14 10h20v28H14z"/><path d="M18 16h12"/><path d="M18 22h12"/><path d="M18 28h8"/><path d="M10 14h4"/><path d="M10 20h4"/><path d="M10 26h4"/><path d="M34 16h4v24H18v-2"/></svg>',
       utskick: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="14" width="32" height="22" rx="3"/><path d="m9 17 15 12 15-12"/><path d="m9 34 11-10"/><path d="m39 34-11-10"/></svg>',
       medlemsregister: '<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="19" cy="18" r="6"/><path d="M9 38a10 10 0 0 1 20 0"/><path d="M29 20l4 4 8-9"/><path d="M31 34h10"/><path d="M36 29v10"/></svg>',
-      hr: '<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="16" r="6"/><path d="M12 36c0-6 6-8 12-8s12 2 12 8"/><path d="M36 18h8"/><path d="M40 14v8"/></svg>'
+      hr: '<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="16" r="6"/><path d="M12 36c0-6 6-8 12-8s12 2 12 8"/><path d="M36 18h8"/><path d="M40 14v8"/></svg>',
+      juridik: '<img src="/paragraftecken.svg" alt="" aria-hidden="true">',
+      skribent: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M32 10 14 28l-2 8 8-2 18-18z"/><path d="M28 14 34 20"/><path d="M10 40h28"/></svg>',
+      film: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="12" width="24" height="24" rx="2"/><path d="m30 20 12-6v20l-12-6"/><circle cx="14" cy="20" r="2"/><circle cx="22" cy="20" r="2"/></svg>',
+      sekretessavtal: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="10" y="20" width="28" height="20" rx="2"/><path d="M16 20v-6a8 8 0 1 1 16 0v6"/><circle cx="24" cy="30" r="3"/></svg>',
+      valorganisation: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="20" width="32" height="22" rx="2"/><path d="M16 20V8h16v12"/><path d="M20 20v-8h8v8"/><path d="M14 28h20"/></svg>'
     };
 
     const DEPARTMENTS = [
@@ -539,10 +574,40 @@
         guideText: 'Passar för: frågor om partiets politik, medlemskap, lokala aktiviteter, företrädare, ställningstaganden och kontaktvägar.'
       },
       {
+        id: 'valorganisation',
+        name: 'Valorganisation',
+        guideTitle: 'Valorganisation',
+        guideText: 'Passar för: planering av valrörelse, valstugor, bemanning, logistik, kampanjmaterial och lokala valstrategier.'
+      },
+      {
         id: 'facebook',
         name: 'Utskick i Sociala medier',
         guideTitle: 'Utskick i Sociala medier',
         guideText: 'Passar för: inlägg i sociala medier, moderering, kommentarer, innehållskalender, publicering och community-frågor.'
+      },
+      {
+        id: 'skribent',
+        name: 'Skribentgruppen',
+        guideTitle: 'Skribentgruppen',
+        guideText: 'Passar för: texter till debattartiklar, insändare, pressmeddelanden, blogginlägg och annat skriftligt material.'
+      },
+      {
+        id: 'film',
+        name: 'Filmgruppen',
+        guideTitle: 'Filmgruppen',
+        guideText: 'Passar för: produktion av video, klippning, textning, inspelning av kampanjfilmer och rörligt material för sociala medier.'
+      },
+      {
+        id: 'juridik',
+        name: 'Juridikgruppen',
+        guideTitle: 'Juridikgruppen',
+        guideText: 'Passar för: juridisk rådgivning, tolkning av stadgar, avtalsgranskning och andra rättsliga frågor.'
+      },
+      {
+        id: 'sekretessavtal',
+        name: 'Sekretessavtal',
+        guideTitle: 'Sekretessavtal',
+        guideText: 'Passar för: frågor om sekretessavtal, undertecknande av NDA, tystnadsplikt och hantering av känslig information.'
       },
       {
         id: 'material',
@@ -611,7 +676,40 @@
 
     function showView(viewId) {
       document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
-      $(viewId).classList.add('active');
+      const el = $(viewId);
+      if (el) el.classList.add('active');
+    }
+
+    async function loginPortal(e) {
+      e.preventDefault();
+      showStatus('portalLoginStatus', '');
+
+      const user = $('portalUser').value;
+      const pass = $('portalPass').value;
+
+      try {
+        const res = await fetch('/api/auth/portal-login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user, pass })
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Inloggning misslyckades');
+
+        sessionStorage.setItem('portal_unlocked', 'true');
+        showView('view-portal');
+      } catch (err) {
+        showStatus('portalLoginStatus', err.message || 'Fel användarnamn eller lösenord.');
+      }
+    }
+
+    function checkPortalAuth() {
+      if (sessionStorage.getItem('portal_unlocked') === 'true') {
+        showView('view-portal');
+        return true;
+      }
+      showView('view-login');
+      return false;
     }
 
     function updateSteps() {
@@ -638,7 +736,7 @@
         'onmouseenter="previewDepartment(\'' + d.id + '\')" ' +
         'onfocus="previewDepartment(\'' + d.id + '\')" ' +
         'onclick="selectDepartment(\'' + d.id + '\')">' +
-        '<span class="dept-icon">' + DEPARTMENT_ICONS[d.id] + '</span>' +
+        '<span class="dept-icon dept-icon-' + escapeHtml(d.id) + '">' + DEPARTMENT_ICONS[d.id] + '</span>' +
         escapeHtml(d.name) + '</button>'
       )).join('');
     }
@@ -1029,6 +1127,7 @@
     }
 
     function bindEvents() {
+      $('portalLoginForm').addEventListener('submit', loginPortal);
       $('orderForm').addEventListener('submit', submitOrder);
       $('adminLoginForm').addEventListener('submit', login);
       $('file').addEventListener('change', updateFileNames);
@@ -1046,7 +1145,9 @@
       bindEvents();
       updateSteps();
       await loadConfig();
-      await checkAuth();
+      if (checkPortalAuth()) {
+        await checkAuth();
+      }
     }
 
     init();

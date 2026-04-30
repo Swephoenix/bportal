@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="35 70 910 100" width="100%" height="auto">
+  <defs>
+    <style>
+      .line-art {
+        fill: none;
+        stroke: #1a1a1a;
+        stroke-width: 2.5;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+    </style>
+  </defs>
+
+  <g class="line-art">
+    
+    <!-- 1. YOUTUBE (Position: 50-170) -->
+    <rect x="50" y="78" width="120" height="84" rx="22" />
+    <polygon points="98,100 128,120 98,140" />
+
+
+    <!-- 2. X / TWITTER (Position: 250-330) -->
+    <path d="M 250 80 L 280 80 L 296.7 106.7 L 320 80 L 330 80 L 300.8 113.3 L 330 160 L 300 160 L 283.3 133.3 L 260 160 L 250 160 L 279.2 126.7 Z" />
+
+
+    <!-- 3. LINKEDIN (Position: 450-534) -->
+    <rect x="450" y="78" width="84" height="84" rx="16" />
+    <circle cx="470" cy="99" r="4" />
+    <rect x="466" y="111" width="8" height="34" />
+    <path d="M 484 111 L 492 111 L 492 117 C 497 109, 514 109, 518 121 L 518 145 L 510 145 L 510 125 C 510 117, 500 117, 492 125 L 492 145 L 484 145 Z" />
+
+
+    <!-- 4. INSTAGRAM (Position: 650-734) -->
+    <rect x="650" y="78" width="84" height="84" rx="22" />
+    <circle cx="692" cy="120" r="19" />
+    <circle cx="716" cy="96" r="3.5" />
+
+
+    <!-- 5. FACEBOOK (Position: 850-934) -->
+    <rect x="850" y="78" width="84" height="84" rx="16" />
+    <path d="M 892 150 L 892 122 L 902 122 L 902 112 L 892 112 L 892 104 C 892 96, 896 94, 902 94 L 902 84 L 892 84 C 882 84, 878 92, 878 104 L 878 112 L 870 112 L 870 122 L 878 122 L 878 150 Z" />
+
+  </g>
+</svg>

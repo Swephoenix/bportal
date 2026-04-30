@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beställningssystem - Splashscreen (Light Mode)</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f9;
+            --heart-color: #0062ff;
+            --pulse-glow: rgba(0, 98, 255, 0.15);
+            --line-color: rgba(0, 0, 0, 0.06);
+            --particle-color: #0062ff;
+            --text-main: #2c3e50;
+            --text-sub: #546e7a;
+            --heart-bg: #ffffff;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--bg-color);
+            background: radial-gradient(circle, #ffffff 0%, #f4f7f9 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+        }
+
+        .splash-container {
+            position: relative;
+            width: 600px;
+            height: 600px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .network-svg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .network-line {
+            stroke: var(--line-color);
+            stroke-width: 1.5;
+            fill: none;
+        }
+
+        .order-particle {
+            fill: var(--particle-color);
+        }
+
+        .system-heart {
+            position: relative;
+            z-index: 10;
+            width: 120px;
+            height: 120px;
+            background: var(--heart-bg);
+            border: 1px solid rgba(0, 98, 255, 0.2);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05), 0 0 20px var(--pulse-glow);
+            animation: heartbeat 2s ease-in-out infinite;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .system-heart:hover {
+            transform: scale(1.05);
+        }
+
+        .logo {
+            width: 55%;
+            height: 55%;
+            fill: var(--heart-color);
+        }
+
+        @keyframes heartbeat {
+            0% { transform: scale(1); box-shadow: 0 5px 15px rgba(0,0,0,0.05), 0 0 15px var(--pulse-glow); }
+            15% { transform: scale(1.08); box-shadow: 0 10px 25px rgba(0,0,0,0.08), 0 0 25px rgba(0, 98, 255, 0.3); }
+            30% { transform: scale(1); box-shadow: 0 5px 15px rgba(0,0,0,0.05), 0 0 18px var(--pulse-glow); }
+            45% { transform: scale(1.05); box-shadow: 0 8px 20px rgba(0,0,0,0.07), 0 0 22px rgba(0, 98, 255, 0.25); }
+            100% { transform: scale(1); box-shadow: 0 5px 15px rgba(0,0,0,0.05), 0 0 15px var(--pulse-glow); }
+        }
+
+        .system-info {
+            position: absolute;
+            bottom: 40px;
+            text-align: center;
+            z-index: 20;
+        }
+
+        .system-info h1 {
+            font-size: 1.4rem;
+            margin: 0;
+            font-weight: 600;
+            color: var(--text-main);
+            letter-spacing: 1px;
+        }
+
+        .sub-text {
+            font-size: 0.8rem;
+            color: var(--text-sub);
+            margin-top: 5px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 500;
+        }
+
+        .loading-bar {
+            width: 200px;
+            height: 4px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 10px;
+            margin: 20px auto 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .loading-progress {
+            width: 30%;
+            height: 100%;
+            background: var(--heart-color);
+            border-radius: 10px;
+            position: absolute;
+            animation: loading 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+        }
+
+        @keyframes loading {
+            0% { left: -30%; width: 20%; }
+            50% { width: 50%; }
+            100% { left: 100%; width: 20%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="splash-container">
+        <!-- Bakgrundsnätverk -->
+        <svg class="network-svg" viewBox="0 0 600 600">
+            <!-- Alla 8 linjer ut till noder -->
+            <path class="network-line" d="M300,300 L300,60" />  <!-- Upp -->
+            <path class="network-line" d="M300,300 L500,100" /> <!-- Upp-Höger -->
+            <path class="network-line" d="M300,300 L540,300" /> <!-- Höger -->
+            <path class="network-line" d="M300,300 L500,500" /> <!-- Ner-Höger -->
+            <path class="network-line" d="M300,300 L300,540" /> <!-- Ner -->
+            <path class="network-line" d="M300,300 L100,500" /> <!-- Ner-Vänster -->
+            <path class="network-line" d="M300,300 L60,300" />  <!-- Vänster -->
+            <path class="network-line" d="M300,300 L100,100" /> <!-- Upp-Vänster -->
+            
+            <!-- Små noder i ändarna (mottagare) -->
+            <circle cx="300" cy="60" r="4" fill="var(--line-color)" />
+            <circle cx="500" cy="100" r="4" fill="var(--line-color)" />
+            <circle cx="540" cy="300" r="4" fill="var(--line-color)" />
+            <circle cx="500" cy="500" r="4" fill="var(--line-color)" />
+            <circle cx="300" cy="540" r="4" fill="var(--line-color)" />
+            <circle cx="100" cy="500" r="4" fill="var(--line-color)" />
+            <circle cx="60" cy="300" r="4" fill="var(--line-color)" />
+            <circle cx="100" cy="100" r="4" fill="var(--line-color)" />
+            
+            <!-- Partiklar (beställningsflöde från mitten ut till kanterna) -->
+            <!-- Genom att variera "begin" och "dur" ser det slumpmässigt ut -->
+            
+            <!-- Upp -->
+            <circle r="4" class="order-particle" opacity="0">
+                <animateMotion dur="2.8s" repeatCount="indefinite" path="M300,300 L300,60" begin="0.2s" />
+                <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="2.8s" repeatCount="indefinite" begin="0.2s" />
+            </circle>
+
+            <!-- Upp-Höger -->
+            <circle r="4" class="order-particle" opacity="0">
+                <animateMotion dur="3.2s" repeatCount="indefinite" path="M300,300 L500,100" begin="1.5s" />
+                <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="3.2s" repeatCount="indefinite" begin="1.5s" />
+            </circle>
+
+            <!-- Höger -->
+            <circle r="4" class="order-particle" opacity="0">
+                <animateMotion dur="2.4s" repeatCount="indefinite" path="M300,300 L540,300" begin="0.8s" />
+                <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="2.4s" repeatCount="indefinite" begin="0.8s" />
+            </circle>
+
+            <!-- Ner-Höger -->
+            <circle r="4" class="order-particle" opacity="0">
+                <animateMotion dur="3.5s" repeatCount="indefinite" path="M300,300 L500,500" begin="2.1s" />
+                <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="3.5s" repeatCount="indefinite" begin="2.1s" />
+            </circle>
+
+            <!-- Ner -->
+            <circle r="4" class="order-particle" opacity="0">
+                <animateMotion dur="2.9s" repeatCount="indefinite" path="M300,300 L300,540" begin="1.1s" />
+                <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="2.9s" repeatCount="indefinite" begin="1.1s" />
+            </circle>
+
+            <!-- Ner-Vänster -->
+            <circle r="4" class="order-particle" opacity="0">
+                <animateMotion dur="3.1s" repeatCount="indefinite" path="M300,300 L100,500" begin="0s" />
+                <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="3.1s" repeatCount="indefinite" begin="0s" />
+            </circle>
+
+            <!-- Vänster (Den du påpekade saknades!) -->
+            <circle r="4" class="order-particle" opacity="0">
+                <animateMotion dur="2.5s" repeatCount="indefinite" path="M300,300 L60,300" begin="1.8s" />
+                <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="2.5s" repeatCount="indefinite" begin="1.8s" />
+            </circle>
+
+            <!-- Upp-Vänster -->
+            <circle r="4" class="order-particle" opacity="0">
+                <animateMotion dur="3.6s" repeatCount="indefinite" path="M300,300 L100,100" begin="0.5s" />
+                <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="3.6s" repeatCount="indefinite" begin="0.5s" />
+            </circle>
+        </svg>
+
+        <!-- Systemets hjärta -->
+        <div class="system-heart" onclick="enterSystem()">
+            <svg class="logo" viewBox="0 0 24 24">
+                <path d="M21,16.5C21,16.88 20.79,17.21 20.47,17.38L12.57,21.82C12.41,21.94 12.21,22 12,22C11.79,22 11.59,21.94 11.43,21.82L3.53,17.38C3.21,17.21 3,16.88 3,16.5V7.5C3,7.12 3.21,6.79 3.53,6.62L11.43,2.18C11.59,2.06 11.79,2 12,2C12.21,2 12.41,2.06 12.57,2.18L20.47,6.62C20.79,6.79 21,7.12 21,7.5V16.5Z" />
+            </svg>
+        </div>
+
+        <!-- Informationstext -->
+        <div class="system-info">
+            <h1>Beställningssystem</h1>
+            <div class="sub-text">Organisationens Hjärtpunkt</div>
+            <div class="loading-bar">
+                <div class="loading-progress"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function enterSystem() {
+            const splash = document.querySelector('.splash-container');
+            splash.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+            splash.style.opacity = '0';
+            splash.style.transform = 'scale(0.9)';
+            
+            setTimeout(() => {
+                document.body.style.background = "white";
+                document.body.innerHTML = `
+                    <div style="text-align:center; animation: fadeIn 1s ease;">
+                        <h2 style="color: #2c3e50; font-weight: 300; font-size: 2rem;">Välkommen</h2>
+                        <p style="color: #546e7a;">Systemet är nu redo.</p>
+                    </div>
+                    <style>
+                        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+                    </style>
+                `;
+            }, 600);
+        }
+    </script>
+</body>
+</html>

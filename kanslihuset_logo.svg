@@ -1,0 +1,91 @@
+<svg width="1200" height="720" viewBox="200 360 1200 760" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Kanslihuset logotyp</title>
+  <desc id="desc">Minimalistisk mörkblå siluett av en riksdagsinspirerad byggnad med texten Kanslihuset.</desc>
+
+  <rect x="200" y="360" width="1200" height="760" fill="#ffffff"/>
+
+  <g fill="#071a36" stroke="#071a36" stroke-linejoin="round" stroke-linecap="round">
+    <!-- Baslinje -->
+    <rect x="250" y="905" width="1100" height="12" rx="2"/>
+
+    <!-- Sidovingar -->
+    <g>
+      <path d="M275 860 L275 645 L310 645 L310 620 L335 605 L355 620 L355 645 L620 645 L620 860 Z"/>
+      <path d="M980 860 L980 645 L1245 645 L1245 620 L1265 605 L1290 620 L1290 645 L1325 645 L1325 860 Z"/>
+    </g>
+
+    <!-- Mittbyggnad -->
+    <path d="M610 860 L610 575 L650 575 L650 555 L690 555 L690 525 L720 525 L720 500 L745 500 L745 470 L775 470 L800 425 L825 470 L855 470 L855 500 L880 500 L880 525 L910 525 L910 555 L950 555 L950 575 L990 575 L990 860 Z"/>
+
+    <!-- Tak och lister -->
+    <rect x="305" y="650" width="290" height="18" fill="#ffffff" opacity="0.92"/>
+    <rect x="1005" y="650" width="290" height="18" fill="#ffffff" opacity="0.92"/>
+    <rect x="610" y="585" width="380" height="18" fill="#ffffff" opacity="0.92"/>
+    <rect x="610" y="700" width="380" height="12" fill="#ffffff" opacity="0.92"/>
+
+    <!-- Fönster vänster -->
+    <g fill="#ffffff">
+      <rect x="330" y="690" width="24" height="95" rx="4"/>
+      <rect x="385" y="690" width="24" height="95" rx="4"/>
+      <rect x="440" y="690" width="24" height="95" rx="4"/>
+      <rect x="495" y="690" width="24" height="95" rx="4"/>
+      <rect x="550" y="690" width="24" height="95" rx="4"/>
+      <rect x="330" y="810" width="24" height="40" rx="3"/>
+      <rect x="385" y="810" width="24" height="40" rx="3"/>
+      <rect x="440" y="810" width="24" height="40" rx="3"/>
+      <rect x="495" y="810" width="24" height="40" rx="3"/>
+      <rect x="550" y="810" width="24" height="40" rx="3"/>
+    </g>
+
+    <!-- Fönster höger -->
+    <g fill="#ffffff">
+      <rect x="1030" y="690" width="24" height="95" rx="4"/>
+      <rect x="1085" y="690" width="24" height="95" rx="4"/>
+      <rect x="1140" y="690" width="24" height="95" rx="4"/>
+      <rect x="1195" y="690" width="24" height="95" rx="4"/>
+      <rect x="1250" y="690" width="24" height="95" rx="4"/>
+      <rect x="1030" y="810" width="24" height="40" rx="3"/>
+      <rect x="1085" y="810" width="24" height="40" rx="3"/>
+      <rect x="1140" y="810" width="24" height="40" rx="3"/>
+      <rect x="1195" y="810" width="24" height="40" rx="3"/>
+      <rect x="1250" y="810" width="24" height="40" rx="3"/>
+    </g>
+
+    <!-- Mittfönster och portar -->
+    <g fill="#ffffff">
+      <rect x="675" y="640" width="28" height="92" rx="6"/>
+      <rect x="735" y="640" width="28" height="92" rx="6"/>
+      <rect x="795" y="640" width="28" height="92" rx="6"/>
+      <rect x="855" y="640" width="28" height="92" rx="6"/>
+      <path d="M705 860 L705 790 Q705 760 735 760 Q765 760 765 790 L765 860 Z"/>
+      <path d="M775 860 L775 790 Q775 760 805 760 Q835 760 835 790 L835 860 Z"/>
+      <path d="M845 860 L845 790 Q845 760 875 760 Q905 760 905 790 L905 860 Z"/>
+    </g>
+
+    <!-- Räcke och dekor -->
+    <g fill="#071a36">
+      <rect x="640" y="535" width="320" height="12"/>
+      <circle cx="680" cy="520" r="9"/>
+      <circle cx="725" cy="520" r="9"/>
+      <circle cx="860" cy="520" r="9"/>
+      <circle cx="905" cy="520" r="9"/>
+      <circle cx="800" cy="475" r="10"/>
+      <path d="M800 410 L808 430 L830 425 L814 440 L825 460 L800 450 L775 460 L786 440 L770 425 L792 430 Z"/>
+    </g>
+
+    <!-- Tunna separationslinjer -->
+    <g stroke="#ffffff" stroke-width="5" fill="none" opacity="0.9">
+      <path d="M610 575 H990"/>
+      <path d="M620 860 V645"/>
+      <path d="M980 860 V645"/>
+      <path d="M275 668 H620"/>
+      <path d="M980 668 H1325"/>
+    </g>
+  </g>
+
+  <!-- Text -->
+  <text x="800" y="1045" text-anchor="middle" fill="#071a36"
+        font-family="Georgia, 'Times New Roman', serif" font-size="92" letter-spacing="28">
+    KANSLIHUSET
+  </text>
+</svg>

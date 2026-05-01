@@ -16,7 +16,6 @@
       --success: #16a34a;
       --danger: #dc2626;
       --admin: #334155;
-      --logo-offset-x: 18px;
     }
 
     * { box-sizing: border-box; }
@@ -34,24 +33,12 @@
     }
 
     .page-shell { width: 100%; max-width: 980px; }
-    .logo-row { display: flex; justify-content: center; margin-bottom: 20px; }
-    .site-logo { width: min(100%, 460px); height: auto; transform: translateX(var(--logo-offset-x)); }
-
-    .admin-trigger {
-      position: fixed;
-      right: 20px;
-      top: 20px;
-      padding: 10px 16px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      background: #fff;
-      color: var(--admin);
-      font-weight: 700;
-      cursor: pointer;
+    .kanslihuset-logo {
+      display: block;
+      width: min(100%, 220px);
+      height: auto;
+      margin: 0 auto 8px;
     }
-
-    .admin-trigger:hover { background: var(--admin); color: white; }
-
     .demo-badge {
       position: fixed;
       right: 20px;
@@ -81,6 +68,43 @@
 
     .view { display: none; }
     .view.active { display: block; }
+    .choice-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 24px;
+    }
+    .choice-btn {
+      min-height: 112px;
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      background: #fff;
+      color: var(--text);
+      cursor: pointer;
+      font: inherit;
+      font-weight: 800;
+      font-size: 1.05rem;
+      text-align: left;
+      padding: 20px;
+      transition: border-color .15s, background .15s, color .15s, transform .15s;
+    }
+    .choice-btn:hover,
+    .choice-btn:focus-visible {
+      border-color: var(--primary);
+      background: #f8fafc;
+      color: var(--primary);
+      transform: translateY(-1px);
+      outline: none;
+    }
+    .choice-btn small {
+      display: block;
+      margin-top: 8px;
+      color: var(--muted);
+      font-weight: 600;
+      line-height: 1.35;
+    }
+    .choice-btn:hover small,
+    .choice-btn:focus-visible small { color: inherit; }
     .login-splash {
       --splash-blue: #0062ff;
       --splash-line: rgba(0, 0, 0, 0.08);
@@ -109,6 +133,9 @@
     .login-splash-particle {
       fill: var(--splash-blue);
     }
+    .login-splash-feedback {
+      fill: #f2a900;
+    }
     .login-splash-heart {
       position: relative;
       z-index: 1;
@@ -123,10 +150,10 @@
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05), 0 0 20px rgba(0, 98, 255, 0.15);
       animation: loginHeartbeat 2s ease-in-out infinite;
     }
-    .login-splash-heart svg {
-      width: 78px;
-      height: 78px;
-      fill: var(--splash-blue);
+    .login-splash-heart img {
+      display: block;
+      width: 108px;
+      height: auto;
     }
     @keyframes loginHeartbeat {
       0% { transform: scale(1); box-shadow: 0 5px 15px rgba(0,0,0,0.05), 0 0 15px rgba(0, 98, 255, 0.15); }
@@ -421,8 +448,8 @@
     }
 
     @media (max-width: 480px) {
-      :root { --logo-offset-x: 8px; }
       .dept-grid { grid-template-columns: 1fr; }
+      .choice-grid { grid-template-columns: 1fr; }
       .btn-row { flex-direction: column; }
       .card { padding: 18px; }
     }
@@ -430,12 +457,9 @@
 </head>
 <body>
   <div id="demoBadge" class="demo-badge" aria-hidden="true">Demo</div>
-  <button class="admin-trigger" type="button" onclick="openAdminLogin()">Admin</button>
 
   <div class="page-shell">
-    <div class="logo-row">
-      <img src="logo.png" alt="Beställningsportalen" class="site-logo">
-    </div>
+    <img src="kanslihuset_logo.svg" alt="Kanslihuset" class="kanslihuset-logo">
 
     <div class="card">
       <div id="view-login" class="view active">
@@ -481,17 +505,38 @@
             <circle r="4" class="login-splash-particle" opacity="0"><animateMotion dur="3.1s" repeatCount="indefinite" path="M300,300 L100,500" begin="0s" /><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="3.1s" repeatCount="indefinite" begin="0s" /></circle>
             <circle r="4" class="login-splash-particle" opacity="0"><animateMotion dur="2.5s" repeatCount="indefinite" path="M300,300 L60,300" begin="1.8s" /><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="2.5s" repeatCount="indefinite" begin="1.8s" /></circle>
             <circle r="4" class="login-splash-particle" opacity="0"><animateMotion dur="3.6s" repeatCount="indefinite" path="M300,300 L100,100" begin="0.5s" /><animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.9;1" dur="3.6s" repeatCount="indefinite" begin="0.5s" /></circle>
+            <circle r="5" class="login-splash-feedback" opacity="0"><animateMotion dur="3.8s" repeatCount="indefinite" path="M300,60 L300,300" begin="1.2s" /><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.24;0.34;0.9;1" dur="3.8s" repeatCount="indefinite" begin="1.2s" /></circle>
+            <circle r="5" class="login-splash-feedback" opacity="0"><animateMotion dur="4.4s" repeatCount="indefinite" path="M500,500 L300,300" begin="2.7s" /><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.3;0.42;0.88;1" dur="4.4s" repeatCount="indefinite" begin="2.7s" /></circle>
+            <circle r="5" class="login-splash-feedback" opacity="0"><animateMotion dur="4.1s" repeatCount="indefinite" path="M60,300 L300,300" begin="4.6s" /><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.28;0.4;0.88;1" dur="4.1s" repeatCount="indefinite" begin="4.6s" /></circle>
+            <circle r="5" class="login-splash-feedback" opacity="0"><animateMotion dur="5s" repeatCount="indefinite" path="M500,100 L300,300" begin="6.2s" /><animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.32;0.44;0.9;1" dur="5s" repeatCount="indefinite" begin="6.2s" /></circle>
           </svg>
           <div class="login-splash-heart" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path d="M21,16.5C21,16.88 20.79,17.21 20.47,17.38L12.57,21.82C12.41,21.94 12.21,22 12,22C11.79,22 11.59,21.94 11.43,21.82L3.53,17.38C3.21,17.21 3,16.88 3,16.5V7.5C3,7.12 3.21,6.79 3.53,6.62L11.43,2.18C11.59,2.06 11.79,2 12,2C12.21,2 12.41,2.06 12.57,2.18L20.47,6.62C20.79,6.79 21,7.12 21,7.5V16.5Z" />
-            </svg>
+            <img src="kanslihuset_logo.svg" alt="">
           </div>
+        </div>
+      </div>
+
+      <div id="view-home" class="view">
+        <h2>Välj väg</h2>
+        <p class="desc">Gå vidare till kanslifunktioner eller skapa en beställning.</p>
+        <div class="choice-grid">
+          <button type="button" class="choice-btn" onclick="openAdminLogin()">
+            Kanslifunktioner
+            <small>Logga in i gruppvyn för att hantera ärenden.</small>
+          </button>
+          <button type="button" class="choice-btn" onclick="openOrderPortal()">
+            Beställningsportalen
+            <small>Skicka en ny förfrågan eller beställning till rätt avdelning.</small>
+          </button>
+        </div>
+        <div class="btn-row" style="justify-content:flex-end;">
+          <button type="button" class="btn btn-secondary" onclick="logoutPortal()">Logga ut</button>
         </div>
       </div>
 
       <div id="view-portal" class="view">
         <div class="btn-row" style="justify-content:flex-end; margin-bottom:12px;">
+          <button type="button" class="btn btn-secondary" onclick="showView('view-home')">Tillbaka</button>
           <button type="button" class="btn btn-secondary" onclick="logoutPortal()">Logga ut</button>
         </div>
         <div class="progress"><div id="progressFill" class="progress-fill"></div></div>
@@ -566,7 +611,7 @@
           </div>
           <div id="loginStatus" class="status"></div>
           <div class="btn-row">
-            <button type="button" class="btn btn-secondary" onclick="showView('view-portal')">Avbryt</button>
+            <button type="button" class="btn btn-secondary" onclick="showView('view-home')">Avbryt</button>
             <button type="submit" class="btn btn-primary" style="background:var(--admin);">Logga in</button>
           </div>
         </form>
@@ -787,10 +832,15 @@
         if (!res.ok) throw new Error(data.error || 'Inloggning misslyckades');
 
         sessionStorage.setItem('portal_unlocked', 'true');
-        showView('view-portal');
+        showView('view-home');
       } catch (err) {
         showStatus('portalLoginStatus', err.message || 'Fel användarnamn eller lösenord.');
       }
+    }
+
+    function openOrderPortal() {
+      showStatus('portalStatus', '');
+      showView('view-portal');
     }
 
     function logoutPortal() {
@@ -803,7 +853,7 @@
 
     function checkPortalAuth() {
       if (sessionStorage.getItem('portal_unlocked') === 'true') {
-        showView('view-portal');
+        showView('view-home');
         return true;
       }
       showView('view-login');
@@ -1005,6 +1055,10 @@
     }
 
     function openAdminLogin() {
+      if (sessionStorage.getItem('portal_unlocked') !== 'true') {
+        showView('view-login');
+        return;
+      }
       showStatus('loginStatus', '');
       $('adminLoginForm').reset();
       showView('view-admin-login');
@@ -1069,7 +1123,7 @@
         await fetch('/api/auth/logout', { method: 'POST' });
       } finally {
         currentUser = null;
-        showView('view-portal');
+        showView('view-home');
       }
     }
 

@@ -544,7 +544,7 @@ function sendText(res, statusCode, text, contentType = 'text/plain; charset=utf-
 }
 
 function serveStatic(req, res, pathname) {
-  const allowedPublic = new Set(['/', '/index.html', '/logo.png', '/paragraftecken.svg', '/socmedialinelogos.svg', '/Splash.html']);
+  const allowedPublic = new Set(['/', '/index.html', '/logo.png', '/kanslihuset_logo.svg', '/paragraftecken.svg', '/socmedialinelogos.svg', '/Splash.html']);
   if (!allowedPublic.has(pathname)) {
     sendText(res, 404, 'Not found');
     return;

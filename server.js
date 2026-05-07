@@ -544,7 +544,7 @@ function sendText(res, statusCode, text, contentType = 'text/plain; charset=utf-
 }
 
 function serveStatic(req, res, pathname) {
-  const allowedPublic = new Set(['/', '/index.html', '/logo.png', '/kanslihuset_logo.svg', '/paragraftecken.svg', '/socmedialinelogos.svg', '/Splash.html']);
+  const allowedPublic = new Set(['/', '/index.html', '/logo.png', '/kanslihuset_logo.svg', '/kanslihuset.mp4', '/paragraftecken.svg', '/socmedialinelogos.svg', '/Splash.html']);
   if (!allowedPublic.has(pathname)) {
     sendText(res, 404, 'Not found');
     return;
@@ -616,6 +616,10 @@ function randomReference() {
 function sanitizeText(v, max = 2000) {
   if (typeof v !== 'string') return '';
   return v.trim().slice(0, max);
+}
+
+function isAllowedOrderEmail(email) {
+  return /^[^\s@]+@ambitionsverige\.se$/i.test(String(email || '').trim());
 }
 
 function requireAuth(req, res) {
@@ -788,6 +792,10 @@ async function handleApi(req, res, url) {
     }
     if (!message || !name || !email) {
       sendJson(res, 400, { error: 'Meddelande, namn och e-post krävs' });
+      return;
+    }
+    if (!isAllowedOrderEmail(email)) {
+      sendJson(res, 400, { error: 'Endast e-postadresser med @ambitionsverige.se kan skicka beställningar' });
       return;
     }
 
@@ -993,17 +1001,23 @@ async function requestHandler(req, res) {
 
 const setup = ensureDataFiles();
 
-const server = http.createServer(requestHandler);
-server.listen(PORT, () => {
-  console.log(`Bestallningsportalen startad: http://localhost:${PORT}`);
-  if (setup.createdUsers) {
-    console.log('users.json skapades med standardkonton per avdelning.');
-  }
-  console.log('Avdelningslösenord:');
-  for (const u of setup.departmentPasswords) {
-    console.log(`- ${u.departmentName}: ${u.password}`);
-  }
-  if (MAIL_DEMO_MODE) {
-    console.log('Mail-läge: demo mode aktivt, inga mejl skickas.');
-  }
-});
+if (require.main === module) {
+  const server = http.createServer(requestHandler);
+  server.listen(PORT, () => {
+    console.log(`Bestallningsportalen startad: http://localhost:${PORT}`);
+    if (setup.createdUsers) {
+      console.log('users.json skapades med standardkonton per avdelning.');
+    }
+    console.log('Avdelningslösenord:');
+    for (const u of setup.departmentPasswords) {
+      console.log(`- ${u.departmentName}: ${u.password}`);
+    }
+    if (MAIL_DEMO_MODE) {
+      console.log('Mail-läge: demo mode aktivt, inga mejl skickas.');
+    }
+  });
+}
+
+module.exports = {
+  isAllowedOrderEmail
+};

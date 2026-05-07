@@ -20,7 +20,7 @@ test('portal login opens a choice view before the order form', () => {
   assert.match(html, /<div id="view-home" class="view">/);
   assert.match(html, /Kanslifunktioner/);
   assert.match(html, /Beställningsportalen/);
-  assert.match(html, /showView\('view-home'\)/);
+  assert.match(html, /goToPostLoginSplash\('view-home'\)/);
   assert.doesNotMatch(html, /sessionStorage\.setItem\('portal_unlocked', 'true'\);\s*showView\('view-portal'\);/);
 });
 
@@ -33,4 +33,11 @@ test('login animation includes orange feedback particles returning to the center
   assert.match(html, /\.login-splash-feedback/);
   assert.match(html, /path="M300,60 L300,300"/);
   assert.match(html, /path="M500,500 L300,300"/);
+});
+
+test('successful logins route through the splashscreen first', () => {
+  assert.match(html, /goToPostLoginSplash\('view-home'\)/);
+  assert.match(html, /goToPostLoginSplash\('view-admin-dashboard'\)/);
+  assert.match(html, /restorePostLoginDestination/);
+  assert.match(html, /Splash\.html/);
 });

@@ -213,15 +213,37 @@
       height: 100%;
       object-fit: contain;
     }
-    .dept-hint {
-      margin-top: 14px;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 14px;
-      background: #f8fafc;
+    .dept-tooltip {
+      position: fixed;
+      z-index: 40;
+      max-width: min(320px, calc(100vw - 32px));
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(15, 23, 42, 0.96);
+      color: #fff;
+      box-shadow: 0 16px 40px rgba(15, 23, 42, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      opacity: 0;
+      transform: translateY(6px);
+      pointer-events: none;
+      transition: opacity .15s ease, transform .15s ease;
     }
-    .dept-hint-title { font-weight: 800; margin: 0 0 6px; }
-    .dept-hint-text { margin: 0; color: var(--muted); }
+    .dept-tooltip.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    .dept-tooltip-title {
+      margin: 0 0 6px;
+      font-size: 0.92rem;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+    }
+    .dept-tooltip-text {
+      margin: 0;
+      font-size: 0.82rem;
+      line-height: 1.45;
+      color: rgba(226, 232, 240, 0.95);
+    }
 
     label { display: block; font-size: 0.9rem; font-weight: 700; margin-bottom: 8px; }
     .form-group { margin-bottom: 16px; }
@@ -546,9 +568,9 @@
             <h2>Vad gäller det?</h2>
             <p class="desc">Välj vilken avdelning som ska hantera din förfrågan.</p>
             <div class="dept-grid" id="deptGrid"></div>
-            <div class="dept-hint" id="deptHint" aria-live="polite">
-              <p class="dept-hint-title" id="deptHintTitle">Hjälp att välja</p>
-              <p class="dept-hint-text" id="deptHintText">Håll musen över en avdelning (eller tryck) för att se exempel på vad som passar där.</p>
+            <div id="deptTooltip" class="dept-tooltip" role="tooltip" aria-hidden="true">
+              <p class="dept-tooltip-title" id="deptTooltipTitle"></p>
+              <p class="dept-tooltip-text" id="deptTooltipText"></p>
             </div>
           </div>
 
@@ -799,6 +821,7 @@
     let currentUser = null;
     let mailDemoMode = false;
     let activeImageAttachment = null;
+    let tooltipAnchor = null;
 
     function $(id) { return document.getElementById(id); }
 
@@ -813,6 +836,11 @@
       document.querySelectorAll('.view').forEach((v) => v.classList.remove('active'));
       const el = $(viewId);
       if (el) el.classList.add('active');
+    }
+
+    function goToPostLoginSplash(destinationView) {
+      sessionStorage.setItem('post_login_destination', destinationView);
+      window.location.href = 'Splash.html';
     }
 
     async function loginPortal(e) {
@@ -832,7 +860,7 @@
         if (!res.ok) throw new Error(data.error || 'Inloggning misslyckades');
 
         sessionStorage.setItem('portal_unlocked', 'true');
-        showView('view-home');
+        goToPostLoginSplash('view-home');
       } catch (err) {
         showStatus('portalLoginStatus', err.message || 'Fel användarnamn eller lösenord.');
       }
@@ -840,6 +868,7 @@
 
     function openOrderPortal() {
       showStatus('portalStatus', '');
+      hideDepartmentTooltip();
       showView('view-portal');
     }
 
@@ -866,23 +895,55 @@
       $('progressFill').style.width = ((currentStep / 3) * 100) + '%';
     }
 
-    function setDepartmentHint(dept) {
-      if (!dept) return;
-      $('deptHintTitle').textContent = dept.guideTitle || dept.name;
-      $('deptHintText').textContent = dept.guideText || '';
+    function hideDepartmentTooltip() {
+      const tooltip = $('deptTooltip');
+      if (!tooltip) return;
+      tooltip.classList.remove('visible');
+      tooltip.setAttribute('aria-hidden', 'true');
+      tooltipAnchor = null;
     }
 
-    function previewDepartment(deptId) {
+    function positionDepartmentTooltip() {
+      const tooltip = $('deptTooltip');
+      if (!tooltip || !tooltipAnchor) return;
+
+      const rect = tooltipAnchor.getBoundingClientRect();
+      const tooltipRect = tooltip.getBoundingClientRect();
+      const margin = 12;
+      let left = rect.left + rect.width / 2 - tooltipRect.width / 2;
+      left = Math.max(margin, Math.min(left, window.innerWidth - tooltipRect.width - margin));
+
+      let top = rect.bottom + margin;
+      if (top + tooltipRect.height > window.innerHeight - margin) {
+        top = rect.top - tooltipRect.height - margin;
+      }
+      top = Math.max(margin, top);
+
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${top}px`;
+    }
+
+    function showDepartmentTooltip(deptId, anchor) {
       const dept = DEPARTMENTS.find((d) => d.id === deptId) || null;
-      if (!dept) return;
-      setDepartmentHint(dept);
+      const tooltip = $('deptTooltip');
+      if (!dept || !tooltip) return;
+
+      $('deptTooltipTitle').textContent = dept.guideTitle || dept.name;
+      $('deptTooltipText').textContent = dept.guideText || '';
+      tooltipAnchor = anchor || null;
+      tooltip.classList.add('visible');
+      tooltip.setAttribute('aria-hidden', 'false');
+      requestAnimationFrame(positionDepartmentTooltip);
     }
 
     function renderDepartments() {
       $('deptGrid').innerHTML = DEPARTMENTS.map((d) => (
         '<button type="button" class="dept-btn" ' +
-        'onmouseenter="previewDepartment(\'' + d.id + '\')" ' +
-        'onfocus="previewDepartment(\'' + d.id + '\')" ' +
+        'onmouseenter="showDepartmentTooltip(\'' + d.id + '\', this)" ' +
+        'onmousemove="positionDepartmentTooltip()" ' +
+        'onfocus="showDepartmentTooltip(\'' + d.id + '\', this)" ' +
+        'onblur="hideDepartmentTooltip()" ' +
+        'onmouseleave="hideDepartmentTooltip()" ' +
         'onclick="selectDepartment(\'' + d.id + '\')">' +
         '<span class="dept-icon dept-icon-' + escapeHtml(d.id) + '">' + DEPARTMENT_ICONS[d.id] + '</span>' +
         escapeHtml(d.name) + '</button>'
@@ -897,7 +958,7 @@
 
     function selectDepartment(deptId) {
       selectedDepartment = DEPARTMENTS.find((d) => d.id === deptId) || null;
-      if (selectedDepartment) setDepartmentHint(selectedDepartment);
+      hideDepartmentTooltip();
       currentStep = 2;
       updateSteps();
     }
@@ -1027,6 +1088,10 @@
         showStatus('portalStatus', 'Meddelande, namn och e-post ar obligatoriska.');
         return;
       }
+      if (!/^[^\s@]+@ambitionsverige\.se$/i.test(payload.email)) {
+        showStatus('portalStatus', 'Endast e-postadresser med @ambitionsverige.se kan skicka beställningar.');
+        return;
+      }
 
       try {
         const res = await fetch('/api/orders', {
@@ -1086,8 +1151,7 @@
 
         currentUser = data.user;
         $('adminInfo').textContent = 'Inloggad som ' + currentUser.departmentName;
-        showView('view-admin-dashboard');
-        await loadOrders();
+        goToPostLoginSplash('view-admin-dashboard');
       } catch (err) {
         showStatus('loginStatus', err.message || 'Tekniskt fel.');
       }
@@ -1116,6 +1180,38 @@
         mailDemoMode = false;
       }
       $('demoBadge').classList.toggle('visible', mailDemoMode);
+    }
+
+    async function restorePostLoginDestination() {
+      const destination = sessionStorage.getItem('post_login_destination');
+      if (!destination) return false;
+
+      sessionStorage.removeItem('post_login_destination');
+
+      if (destination === 'view-home') {
+        showView('view-home');
+        return true;
+      }
+
+      if (destination === 'view-admin-dashboard') {
+        try {
+          const res = await fetch('/api/auth/me');
+          const data = await res.json();
+          if (data.authenticated) {
+            currentUser = data.user;
+            $('adminInfo').textContent = 'Inloggad som ' + currentUser.departmentName;
+            showView('view-admin-dashboard');
+            await loadOrders();
+          } else {
+            showView('view-login');
+          }
+        } catch (_) {
+          showView('view-login');
+        }
+        return true;
+      }
+
+      return false;
     }
 
     async function logout() {
@@ -1297,6 +1393,9 @@
       bindEvents();
       updateSteps();
       await loadConfig();
+      if (await restorePostLoginDestination()) {
+        return;
+      }
       if (checkPortalAuth()) {
         await checkAuth();
       }
